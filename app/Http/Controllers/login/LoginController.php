@@ -12,10 +12,11 @@ use App\Models\customers\Customers;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\email\Emails;
 use App\Http\Controllers\validations\ValidateFields;
+use App\Http\Controllers\person\PersonController;
 
 class LoginController extends Controller {
-    public $emails;
-    public $validateFields;
+    private $emails;
+    private $validateFields;
 
     public function __construct(){
         $this->emails = new Emails();
@@ -28,7 +29,7 @@ class LoginController extends Controller {
 
         $user = Customers::create([
             'nombreusuario' => $req->username,
-            'idPersona' => 6, // Crear una persona vacía
+            'idPersona' => PersonController::storeEmpty(),
             'email' => $req->email,
             'contrasena' => Hash::make($req->password),
             'estado' => 1,
@@ -173,7 +174,7 @@ class LoginController extends Controller {
         }
 
         if(isset($user)){
-            if($user->intentos == -1) $user->intentos = 3;
+            if($user->intentos < 3) $user->intentos = 3;
             
             $user->contrasena = Hash::make($req->password);
             $user->fechamodificacion = date('Y-m-d');
@@ -189,6 +190,7 @@ class LoginController extends Controller {
     }
 
     private function sendResetLink($user, $userType){
+        // check error key and action
         $tokenObj = $user->createToken('reset password token');
         $token = $tokenObj->accessToken;
         $tokenId = $tokenObj->token->id;

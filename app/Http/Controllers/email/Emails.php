@@ -10,7 +10,7 @@ class Emails {
             Mail::send($template, $data, function($message) use ($to, $subject) {
                 $message->to($to)
                 ->subject($subject);
-                $message->from('evegongora@clotthy.com', 'Clotthy');
+                $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
             });
         } catch(\Exception $e){
             return [

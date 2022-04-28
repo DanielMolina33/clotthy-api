@@ -19,6 +19,6 @@ class Customers extends Authenticatable
         'contrasena',
         'estado',
         'fechacreacion',
-        'fechaactualizacion'
+        'fechamodificacion'
     ];
 }

@@ -5,20 +5,14 @@ namespace App\Models\persons;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Persons extends Model {
+class Parameters extends Model {
     use HasFactory;
 
-    protected $table = "personas";
+    protected $table = "tipo";
     public $timestamps = false;
     protected $fillable = [
-        'tipodocumento',
-        'idciudad',
-        'genero',
-        'nombres',
-        'apellidos',
-        'numerodocumento',
-        'fechanacimiento',
-        'avatar',
+        'nombretipo',
+        'descripciontipo',
         'estado',
         'fechacreacion',
         'fechamodificacion'

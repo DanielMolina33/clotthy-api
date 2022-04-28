@@ -12,4 +12,13 @@ class Employees extends Authenticatable
     use HasFactory, HasApiTokens;
     protected $table = "usuarios";
     public $timestamps = false;
+    protected $fillable = [
+        'nombreusuario',
+        'idPersona',
+        'email',
+        'contrasena',
+        'estado',
+        'fechacreacion',
+        'fechamodificacion'
+    ];
 }
