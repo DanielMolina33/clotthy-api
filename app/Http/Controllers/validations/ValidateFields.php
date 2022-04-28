@@ -31,15 +31,18 @@ class ValidateFields {
     }
 
     private function validateString($req, $field){
+        $isRequired = $field == 'parameter_desc' ? '' : 'required';
+        $length = $field == 'parameter_desc' ? '300' : '45';
+        $only_letters = strlen($req->$field) == 0 ? '' : 'only_letters';
         $validator = Validator::make($req->only($field),
-            [$field => 'required|max:45|only_letters'],
+            [$field => "required|max:$length|only_letters"],
             ["$field.only_letters" => "The $field must only contain letters."]
         );
         $this->getErrors($validator->errors()->all());
     }
 
     private function validatePhone($req, $field){
-        $isRequired = $field == 'cellphone' ? 'required' : ''; 
+        $isRequired = $field == 'cellphone' ? 'required' : '';
         $validator = Validator::make($req->only($field),
             [$field => "$isRequired|max:20|numeric"],
         );
@@ -57,7 +60,7 @@ class ValidateFields {
         foreach($fields as $field){
             switch($field){
                 case 'username':
-                    $validator = Validator::make($req->only('username'), 
+                    $validator = Validator::make($req->only('username'),
                         ['username' => 'required|max:45|without_spaces|alpha_num'],
                         [
                             'username.without_spaces' => 'Whitespace not allowed in username'
@@ -67,7 +70,7 @@ class ValidateFields {
                     break;
                 case 'email':
                     $unique = $userType !== null ? '|unique:'.$userType : "";
-                    $validator = Validator::make($req->only('email'), 
+                    $validator = Validator::make($req->only('email'),
                         ['email' => 'required|string|email|max:45'.$unique],
                     );
                     $this->getErrors($validator->errors()->all());
