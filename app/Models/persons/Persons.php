@@ -5,6 +5,9 @@ namespace App\Models\persons;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Models\addresses\Addresses;
+use App\Models\employees\Employees;
+
 class Persons extends Model {
     use HasFactory;
 
@@ -23,4 +26,12 @@ class Persons extends Model {
         'fechacreacion',
         'fechamodificacion'
     ];
+
+    public function employee(){
+        return $this->hasMany(Employees::class, 'idpersona');
+    }
+
+    public function address(){
+        return $this->hasMany(Addresses::class, 'idpersona');
+    }
 }

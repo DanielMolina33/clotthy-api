@@ -24,7 +24,13 @@ class ParameterController extends Controller {
     }
 
     public function store(Request $req){
-        $validator = $this->validateFields->validate($req, ['parameter_name', 'parameter_desc']);
+        if(strlen($req->parameter_desc) > 0){
+            $fields = ['parameter_name', 'parameter_desc'];
+        } else {
+            $fields = ['parameter_name'];
+        }
+
+        $validator = $this->validateFields->validate($req, $fields);
         if($validator) return response($validator['res'], $validator['status']);
 
         $parameter = Parameters::create([

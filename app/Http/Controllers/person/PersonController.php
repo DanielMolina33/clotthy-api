@@ -11,6 +11,7 @@ use App\Http\Controllers\validations\ValidateFields;
 use App\Http\Controllers\roles\UserRoles;
 use App\Models\employees\Employees;
 use App\Http\Controllers\image\ImageController;
+use App\Http\Controllers\address\AddressController;
 
 class PersonController extends Controller {
     private $validateFields;
@@ -38,7 +39,8 @@ class PersonController extends Controller {
     public function store(Request $req){
         $validator = $this->validateFields->validate($req, [
             'id_type', 'id_city', 'id_gender', 'username', 'email', 
-            'password', 'first_name', 'last_name', 'id_number', 'birthday', 'avatar'
+            'password', 'first_name', 'last_name', 'id_number', 'birthday', 'avatar',
+            'id_address_type', 'address', 'postal_code', 'complements'
         ], 'usuarios');
         if($validator) return response($validator['res'], $validator['status']);
 
@@ -57,18 +59,30 @@ class PersonController extends Controller {
         ]);
 
         if($user){
-            $employee = Employees::create([
+            $user->employee()->create([
                 'nombreusuario' => $req->username,
-                'idPersona' => $user->id,
+                'idpersona' => $user->id,
                 'email' => $req->email,
                 'contrasena' => Hash::make($req->password),
                 'estado' => 1,
                 'fechacreacion' => date('Y-m-d'),
                 'fechamodificacion' => date('Y-m-d')
             ]);
+
+            $user->address()->create([
+                'tipodireccion' => $req->id_address_type,
+                'idpersona' => $user->id,
+                'idproveedor' => null,
+                'direccion' => $req->address,
+                'codigopostal' => $req->postal_code,
+                'complementos' => $req->complements,
+                'estadodireccion' => 1,
+                'fechacreacion' => date('Y-m-d'),
+                'fechamodificacion' => date('Y-m-d')
+            ]);
         }
 
-        if(isset($user) && isset($employee)){
+        if(isset($user)){
             $response = ['res' => ['message' => 'El usuario fue creado correctamente'], 'status' => 201];
         } else {
             $response = ['res' => ['message' => 'Hubo un problema al crear el usuario, intentalo de nuevo'], 'status' => 400];

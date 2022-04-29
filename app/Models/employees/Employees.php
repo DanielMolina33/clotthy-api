@@ -14,7 +14,7 @@ class Employees extends Authenticatable
     public $timestamps = false;
     protected $fillable = [
         'nombreusuario',
-        'idPersona',
+        'idersona',
         'email',
         'contrasena',
         'estado',

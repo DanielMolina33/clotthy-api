@@ -30,10 +30,7 @@ class ValidateFields {
         }
     }
 
-    private function validateString($req, $field){
-        $isRequired = $field == 'parameter_desc' ? '' : 'required';
-        $length = $field == 'parameter_desc' ? '300' : '45';
-        $only_letters = strlen($req->$field) == 0 ? '' : 'only_letters';
+    private function validateString($req, $field, $length=45){
         $validator = Validator::make($req->only($field),
             [$field => "required|max:$length|only_letters"],
             ["$field.only_letters" => "The $field must only contain letters."]
@@ -131,7 +128,22 @@ class ValidateFields {
                     $this->validateString($req, 'parameter_name');
                     break;
                 case 'parameter_desc':
-                    $this->validateString($req, 'parameter_desc');
+                    $this->validateString($req, 'parameter_desc', 300);
+                    break;
+                case 'id_address_type':
+                    $this->validateForeignId($req, 'id_address_type');
+                    break;
+                case 'postal_code':
+                    $validator = Validator::make($req->only('postal_code'),
+                        ['postal_code' => 'numeric|max:45']
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
+                case 'complements':
+                    $validator = Validator::make($req->only('complements'),
+                        ['complements' => 'max:300|string']
+                    );
+                    $this->getErrors($validator->errors()->all());
                     break;
             }
         }
