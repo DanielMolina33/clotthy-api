@@ -28,6 +28,33 @@ class PersonController extends Controller {
         return abort(response()->json(['message' => 'Forbidden'], 403));
     }
 
+    private function storePhone($data){
+        $user->phone()->create([
+            'tiponumero' => $data['id_number_type'],
+            'idproveedor' => null,
+            'idempresa' => null,
+            'idusuario' => $data['id'],
+            'numerotelefono' => $data['number'],
+            'idicativo' => $data['indicative'],
+            'estado' => 1,
+            'fechacreacion' => date('Y-m-d'),
+            'fechamodificacion' => date('Y-m-d')
+        ]);
+    }
+
+    private function getNumbersData($req, $name){
+        $numbersData = [];
+        $field = $name.'_length';
+        $length = intval($req->$field);
+        for($i = 1; $i <= $length; $i++){
+            $numberField = $name.'_'.$i;
+            $number = $req->$numberField;
+            array_push($numbersData, $number);
+        }
+
+        return $numbersData;
+    }
+
     public function index(Request $req){
         //
     }
@@ -37,10 +64,15 @@ class PersonController extends Controller {
     }
 
     public function store(Request $req){
+        // $cellphonesData = $this->getNumbersData($req, 'cellphone');
+        // $phonesData = $this->getNumbersData($req, 'phone');
+        // if(is_numeric($req->cellphone_length) && strlen($req->cellphone_length) == 1){   
+
         $validator = $this->validateFields->validate($req, [
             'id_type', 'id_city', 'id_gender', 'username', 'email', 
             'password', 'first_name', 'last_name', 'id_number', 'birthday', 'avatar',
-            'id_address_type', 'address', 'postal_code', 'complements'
+            'id_address_type', 'address', 'postal_code', 'complements',
+            'cellphone', 'phone', 'cellphone_length', 'phone_length'
         ], 'usuarios');
         if($validator) return response($validator['res'], $validator['status']);
 
@@ -80,6 +112,14 @@ class PersonController extends Controller {
                 'fechacreacion' => date('Y-m-d'),
                 'fechamodificacion' => date('Y-m-d')
             ]);
+
+            
+            // $this->storePhone([
+            //     'tiponumero' => $data['id_number_type'],
+            //     'idusuario' => $data['id'],
+            //     'numerotelefono' => $data['number'],
+            //     'idicativo' => $data['indicative'],
+            // ]);
         }
 
         if(isset($user)){

@@ -1,22 +1,22 @@
 <?php
 
-namespace App\Models\addresses;
+namespace App\Models\phones;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Adresses extends Model {
+class Phones extends Model {
     use HasFactory;
-    protected $table = "direcciones";
+    protected $table = "telefonos";
     public $timestamps = false;
     protected $fillable = [
-        'tipodireccion',
-        'idpersona',
+        'tiponumero',
         'idproveedor',
-        'direccion',
-        'codigopostal',
-        'complementos',
-        'estadodireccion',
+        'idempresa',
+        'idusuario',
+        'numerotelefono',
+        'idicativo',
+        'estado',
         'fechacreacion',
         'fechamodificacion'
     ];

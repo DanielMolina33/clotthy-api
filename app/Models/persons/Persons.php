@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 use App\Models\addresses\Addresses;
 use App\Models\employees\Employees;
+use App\Models\phones\Phones;
 
 class Persons extends Model {
     use HasFactory;
@@ -33,5 +34,9 @@ class Persons extends Model {
 
     public function address(){
         return $this->hasMany(Addresses::class, 'idpersona');
+    }
+
+    public function phone(){
+        return $this->hasMany(Phones::class, 'idpersona');
     }
 }

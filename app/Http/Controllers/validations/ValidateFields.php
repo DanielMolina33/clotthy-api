@@ -38,12 +38,28 @@ class ValidateFields {
         $this->getErrors($validator->errors()->all());
     }
 
-    private function validatePhone($req, $field){
-        $isRequired = $field == 'cellphone' ? 'required' : '';
-        $validator = Validator::make($req->only($field),
-            [$field => "$isRequired|max:20|numeric"],
-        );
-        $this->getErrors($validator->errors()->all());
+    private function validatePhoneNumber($req, $field){
+        if($field == 'cellphone'){
+            if(is_numeric($req->cellphone_length) && strlen($req->cellphone_length) == 1){
+                for($i = 1; $i <= $req->cellphone_length; $i++){
+                    $name = $field.'_'.$i;
+                    $validator = Validator::make($req->only($name),
+                        [$name => "present|digits_between:0,20"]
+                    );
+                    $this->getErrors($validator->errors()->all());
+                }
+            }
+        } else if($field == 'phone'){
+            if(is_numeric($req->phone_length) && strlen($req->phone_length) == 1){
+                for($i = 1; $i <= $req->phone_length; $i++){
+                    $name = $field.'_'.$i;
+                    $validator = Validator::make($req->only($name),
+                        [$name => 'present|digits_between:0,20']
+                    );
+                    $this->getErrors($validator->errors()->all());
+                }
+            }
+        }
     }
 
     private function validateForeignId($req, $field){
@@ -107,10 +123,22 @@ class ValidateFields {
                     $this->getErrors($validator->errors()->all());
                     break;
                 case 'cellphone':
-                    $this->validatePhone($req, 'cellphone');
+                    $this->validatePhoneNumber($req, 'cellphone');
+                    break;
+                case 'cellphone_length':
+                    $validator = Validator::make($req->only('cellphone_length'),
+                        ['cellphone_length' => "required|digits:1"]
+                    );
+                    $this->getErrors($validator->errors()->all());
                     break;
                 case 'phone':
-                    $this->validatePhone($req, 'phone');
+                    $this->validatePhoneNumber($req, 'phone');
+                    break;
+                case 'phone_length':
+                    $validator = Validator::make($req->only('phone_length'),
+                        ['phone_length' => 'present|digits:1']
+                    );
+                    $this->getErrors($validator->errors()->all());
                     break;
                 case 'birthday':
                     $validator = Validator::make($req->only('birthday'),
@@ -120,7 +148,7 @@ class ValidateFields {
                     break;
                 case 'avatar':
                     $validator = Validator::make($req->only('avatar'),
-                        ['avatar' => "mimes:jpg,jpeg,png,webp|max:2000"]
+                        ['avatar' => "nullable|mimes:jpg,jpeg,png,webp|max:2000"]
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
@@ -135,13 +163,13 @@ class ValidateFields {
                     break;
                 case 'postal_code':
                     $validator = Validator::make($req->only('postal_code'),
-                        ['postal_code' => 'numeric|max:45']
+                        ['postal_code' => 'nullable|digits_between:0,45']
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
                 case 'complements':
                     $validator = Validator::make($req->only('complements'),
-                        ['complements' => 'max:300|string']
+                        ['complements' => 'nullable|max:300|string']
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
