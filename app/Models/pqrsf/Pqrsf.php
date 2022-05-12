@@ -1,27 +1,31 @@
 <?php
 
-namespace App\Models\parameters;
+namespace App\Models\pqrsf;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
 use App\Models\parameters\ParametersValues;
 
-class Parameters extends Model {
+class Pqrsf extends Model {
     use HasFactory;
 
-    protected $table = "tipo";
+    protected $table = "pqrsf";
     public $timestamps = false;
     protected $hidden = ['estado'];
     protected $fillable = [
-        'nombretipo',
-        'descripciontipo',
+        'idpersona',
+        'estadosolicitudpqrsf',
+        'tiposolicitudpqrsf',
+        'tipodocumento',
+        'asunto',
+        'descripcion',
+        'nombres',
+        'apellidos',
+        'email',
+        'numerodocumento',
+        'imgayuda',
         'estado',
         'fechacreacion',
         'fechamodificacion'
     ];
-
-    public function parameterValue(){
-        return $this->hasMany(ParametersValues::class, 'idtipo');
-    }
 }

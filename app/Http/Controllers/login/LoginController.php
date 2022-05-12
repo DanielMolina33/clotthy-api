@@ -40,7 +40,7 @@ class LoginController extends Controller {
         if(isset($user)){
             $response = ['res' => ['message' => 'Tu usuario fue creado correctamente'], 'status' => 201];
         } else {
-            $response = ['res' => ['message' => 'Hubo un problema al crear tu usuario, intentalo de nuevo'], 'status' => 400];
+            $response = ['res' => ['message' => 'Hubo un error al crear tu usuario, intentalo de nuevo'], 'status' => 400];
         }
 
         return response($response['res'], $response['status']);
@@ -54,7 +54,7 @@ class LoginController extends Controller {
 
         if($userType == 'employees'){
             $employee = Employees::where('email', $req->email)->first();
-            $response = $this->verifyUser($req, $employee);
+            $response = $this->verifyUser($req, $employee, 'employees');
             if(isset($response['res']['user'])){
                 $employeePermissions = $this->getEmployeeRolePermissions($response['res']['user']['id']);
                 if(count($employeePermissions) > 0){
@@ -63,16 +63,16 @@ class LoginController extends Controller {
             }
         } else if($userType == 'customers'){
             $customer = Customers::where('email', $req->email)->first();
-            $response = $this->verifyUser($req, $customer);
+            $response = $this->verifyUser($req, $customer, 'customers');
         }
     
         return response($response['res'], $response['status']);
     }
 
-    private function verifyUser($req, $user){
+    private function verifyUser($req, $user, $userType){
         if(isset($user)){
             if(Hash::check($req->password, $user->contrasena)){
-                $attemps = $this->signInAttemps($user, true);
+                $attemps = $this->signInAttemps($user, $userType, true);
                 
                 if($user->intentos >= 1 && $user->intentos <= 3){
                     $token = $user->createToken('User logged')->accessToken;
@@ -90,7 +90,7 @@ class LoginController extends Controller {
                     'status' => 200
                 ];
             } else {
-                $attemps = $this->signInAttemps($user, false);
+                $attemps = $this->signInAttemps($user, $userType, false);
                 return $attemps ? $attemps : ['res' => ['message' => 'La contraseña es incorrecta'], 'status' => 400];
             }
         } else {
@@ -98,7 +98,7 @@ class LoginController extends Controller {
         }
     }
 
-    private function signInAttemps($user, $signInSuccess){
+    private function signInAttemps($user, $userType, $signInSuccess){
         if($user->intentos >= 0){
             if(!$signInSuccess || $user->intentos == 0){
                 if($user->intentos >= 1 && $user->intentos <= 3){
@@ -107,7 +107,8 @@ class LoginController extends Controller {
                 } else {
                     $user->intentos = -1; 
                     $user->save();
-                    $emailResponse = $this->emailAttemps($user);
+                    $this->emailAttemps($user);
+                    $emailResponse = $this->sendResetLink($user, $userType);
                     return [
                         'res' => [
                             'message' => 'Has superado el maximo de intentos para iniciar sesion, por favor cambia tu contraseña',
@@ -207,7 +208,7 @@ class LoginController extends Controller {
             $user->email,
             'Advertencia, muchos intentos de acceso',
             'emails.mail',
-            ['name' => $user->nombreusuario, 'body' => 'Hubo muchos intentos de ingresar a tu cuenta, debes cambiar la contraseña'],
+            ['name' => $user->nombreusuario, 'body' => 'Hubo muchos intentos de ingresar a tu cuenta, en minutos te enviaremos un enlace para realizar el proceso'],
         );
     }
 

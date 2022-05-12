@@ -1,21 +1,20 @@
 <?php
 
-namespace App\Models\parameters;
+namespace App\Models\observations;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\parameters\Parameters;
 
-class ParametersValues extends Model {
+class Observations extends Model {
     use HasFactory;
 
-    protected $table = "tipos";
+    protected $table = "observaciones";
     public $timestamps = false;
-    protected $hidden = ['estado'];
+    protected $hidden = ['idpersona', 'identradaproductos', 'estado'];
     protected $fillable = [
-        'idtipo',
-        'nombretipos',
-        'descripciontipos',
+        'idpersona',
+        'identradaproductos',
+        'observacion',
         'estado',
         'fechacreacion',
         'fechamodificacion'

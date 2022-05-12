@@ -12,12 +12,17 @@ Route::group(['middleware' => ['cors', 'json.response']], function(){
     Route::post("/password/reset/{userType}/{id}/{tokenId}", "App\Http\Controllers\login\LoginController@passwordReset");
 });
 
-// Person employees routes
+//Employees routes
 Route::group(['middleware' => ['cors', 'json.response', 'auth:employee']], function(){
-    Route::resources([
-        "person" => "App\Http\Controllers\person\PersonController",
-        "parameter" => "App\Http\Controllers\parameter\ParameterController"
-    ]);
+    Route::resource("person", "App\Http\Controllers\person\PersonController");
+    Route::resource("parameter", "App\Http\Controllers\parameter\ParameterController")->except(['create', 'edit', 'show']);
+    Route::resource("parameter_value", "App\Http\Controllers\parameter\ParameterValueController")->except(['create', 'edit', 'show']);
+});
+
+// Public routes
+Route::group(['middleware' => ['cors', 'json.response']], function(){
+    Route::resource("pqrsf", "App\Http\Controllers\pqrsf\PqrsfController");
+    Route::get("/my_pqrsf", "App\Http\Controllers\pqrsf\PqrsfController@myPqrsf");
 });
 
 // Modificar respuestas

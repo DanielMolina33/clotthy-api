@@ -9,6 +9,7 @@ class Addresses extends Model {
     use HasFactory;
     protected $table = "direcciones";
     public $timestamps = false;
+    protected $hidden = ['idpersona', 'tipodireccion', 'idproveedor', 'estadodireccion', 'fechacreacion', 'fechamodificacion'];
     protected $fillable = [
         'tipodireccion',
         'idpersona',
