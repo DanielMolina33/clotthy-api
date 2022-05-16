@@ -98,9 +98,10 @@ class PersonController extends Controller {
 
     public function store(Request $req){
         if($req->permissions['create']){
+            // Image deleted because admin is not who uploads employee's avatar
             $validator = $this->validateFields->validateWithPhone($req, [
                 'id_type', 'id_city', 'id_gender', 'username', 'email', 
-                'password', 'first_name', 'last_name', 'id_number', 'birthday', 'image',
+                'password', 'first_name', 'last_name', 'id_number', 'birthday',
                 'id_address_type', 'address', 'postal_code', 'complements',
                 'cellphone', 'phone', 'cp_length', 'p_length', 'indicative'
             ], 3, null, 'usuarios');
@@ -121,8 +122,8 @@ class PersonController extends Controller {
             ]);
     
             if($user){
-                $user->avatar = ImageController::storeImage('avatars', $req->file('image'));
-                $user->save();
+                // $user->avatar = ImageController::storeImage('avatars', $req->file('image'));
+                // $user->save();
                 
                 $user->employee()->create([
                     'nombreusuario' => $req->username,
