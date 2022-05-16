@@ -15,11 +15,34 @@ class ImageController extends Controller {
             if($path){
                 return $filepath.$path;
             } else {
-                return null;
+                return '';
             }
             
         } else {
-            return null;
+            return '';
         }
+    }
+
+    public static function updateImage($folder, $url, $newFile){
+        if($url){
+            $deleted = self::deleteImage($folder, $url);
+            if($deleted){
+                return self::storeImage($folder, $newFile);
+            }
+        } else {
+            return self::storeImage($folder, $newFile);
+        }
+    }
+
+    public static function deleteImage($folder, $url){
+        $filename = explode("$folder/", $url)[1];
+        $fileExists = Storage::exists("$folder/$filename");
+
+        if($fileExists){
+            Storage::delete("$folder/$filename");
+            return true;
+        }
+
+        return false;
     }
 }

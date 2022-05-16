@@ -71,7 +71,7 @@ class ParameterController extends Controller {
             }
 
             return response($response['res'], $response['status']);
-        }else if ($req->isMethod('PATCH')){
+        } else if ($req->isMethod('PATCH')){
             $response = $this->destroy($req, $id);
 
             return response($response['res'], $response['status']);

@@ -15,6 +15,7 @@ use App\Models\parameters\ParametersValues;
 use App\Models\pqrsf\Pqrsf;
 use App\Http\Controllers\image\ImageController;
 use App\Http\Controllers\address\AddressController;
+use App\Http\Controllers\utils\StorePhone;
 
 class PersonController extends Controller {
     private $validateFields;
@@ -29,46 +30,6 @@ class PersonController extends Controller {
 
     private function abortResponse(){
         return abort(response()->json(['message' => 'Forbidden'], 403));
-    }
-
-    private function storePhone($req, $user, $phone_type){
-        $id_number_type;
-        $data = $this->getNumbersData($req, $phone_type);
-        
-        foreach($data as $item){
-            if($phone_type == 'cp'){
-                $id_number_type = ParametersValues::select('id')->where('nombretipos', 'celular')->first();
-            } else if($phone_type == 'p'){
-                $id_number_type = ParametersValues::select('id')->where('nombretipos', 'telefono')->first();
-            }
-
-            $user->phone()->create([
-                'tiponumero' => $id_number_type->id,
-                'idproveedor' => null,
-                'idempresa' => null,
-                'idpersona' => $user->id,
-                'numerotelefono' => $item['number'],
-                'indicativo' => $item['indicative'],
-                'estado' => 1,
-                'fechacreacion' => date('Y-m-d'),
-                'fechamodificacion' => date('Y-m-d')
-            ]);
-        }
-    }
-
-    private function getNumbersData($req, $name){
-        $numbersData = [];
-        $field = $name.'_length';
-        $length = intval($req->$field);
-        for($i = 1; $i <= $length; $i++){
-            $numberField = $name.'_'.$i;
-            $indicativeField = 'indicative_'.$name.'_'.$i;
-            $number = $req->$numberField;
-            $indicative = $req->$indicativeField;
-            array_push($numbersData, ['number' => $number, 'indicative' => $indicative]);
-        }
-
-        return $numbersData;
     }
 
     private function userQuery($table, $search){
@@ -97,21 +58,6 @@ class PersonController extends Controller {
         }
 
         return collect($users)->paginate($pagination); 
-    }
-
-    private function validateUserFields($req, $fields, $userType){
-        if($userType == 'usuarios'){
-            $cp_p_gt = [];
-            $cp_gt = intval($req->cp_length) > 3;
-            $p_gt = intval($req->p_length) > 3;
-    
-            if($cp_gt) array_push($cp_p_gt, "cp length cannot be greater than 3");
-            if($p_gt) array_push($cp_p_gt, "p length cannot be greater than 3");
-            if($cp_gt || $p_gt) return ['res' => ['message' => $cp_p_gt], 'status' => 400];
-        }
-        
-        $validator = $this->validateFields->validate($req, $fields, $userType);
-        return $validator;
     }
 
     private function setObservation($req, $person){
@@ -152,12 +98,12 @@ class PersonController extends Controller {
 
     public function store(Request $req){
         if($req->permissions['create']){
-            $validator = $this->validateUserFields($req, [
+            $validator = $this->validateFields->validateWithPhone($req, [
                 'id_type', 'id_city', 'id_gender', 'username', 'email', 
                 'password', 'first_name', 'last_name', 'id_number', 'birthday', 'image',
                 'id_address_type', 'address', 'postal_code', 'complements',
                 'cellphone', 'phone', 'cp_length', 'p_length', 'indicative'
-            ], 'usuarios');
+            ], 3, null, 'usuarios');
             if($validator) return response($validator['res'], $validator['status']);
 
             $user = Persons::create([
@@ -199,9 +145,9 @@ class PersonController extends Controller {
                     'fechacreacion' => date('Y-m-d'),
                     'fechamodificacion' => date('Y-m-d')
                 ]);
-    
-                $this->storePhone($req, $user, 'cp');
-                $this->storePhone($req, $user, 'p');
+                
+                StorePhone::store($req, $user, 'persona', 'cp', 'create');
+                StorePhone::store($req, $user, 'persona', 'p', 'create');
             }
     
             if(isset($user)){
@@ -256,69 +202,97 @@ class PersonController extends Controller {
     }
 
     public function update(Request $req, $id){
-        if($req->permissions['update']){
-            $fields = ['id_type', 'id_gender', 'email', 'id_number', 'birthday', 'observations'];
+        if($req->isMethod('PUT')){
+            if($req->permissions['update']){
+                $fields = ['id_type', 'id_gender', 'email', 'id_number', 'birthday', 'observations'];
+    
+                $person = Persons::where('id', $id)->first();
+    
+                if($person){
+                    $employee = $person->employee()->where('idpersona', $id)->first();
+                    $customer = $person->customer()->where('idpersona', $id)->first();
+    
+                    if($employee){
+                        array_push($fields, 'id_city', 'first_name', 'last_name');
+                        $userType = 'usuarios';
+        
+                    } else if($customer) $userType = 'clientes';
+    
+                    $validator = $this->validateFields->validate($req, $fields, $userType);
+                    if($validator) return response($validator['res'], $validator['status']);  
+        
+                    if($person && $employee){
+                        $person->update([
+                            'tipodocumento' => $req->id_type,
+                            'idciudad' => $req->id_city,
+                            'genero' => $req->id_gender,
+                            'nombres' => $req->first_name,
+                            'apellidos' => $req->last_name,
+                            'numerodocumento' => $req->id_number,
+                            'fechanacimiento' => date($req->birthday),
+                            'fechamodificacion' =>  date('Y-m-d')
+                        ]);
+        
+                        $person->observation()->create($this->setObservation($req, $person));
+                        $person->employee()->email = $req->email;
+                        $person->save();
+                        
+                    } else if($person && $customer){
+                        $person->update([
+                            'tipodocumento' => $req->id_type,
+                            'genero' => $req->id_gender,
+                            'numerodocumento' => $req->id_number,
+                            'fechanacimiento' => $req->birthday ? date($req->birthday) : null,
+                            'fechamodificacion' =>  date('Y-m-d')
+                        ]);
+    
+                        $person->observation()->create($this->setObservation($req, $person));
+                        $person->customer()->email = $req->email;
+                        $person->save();
+                    }
+                }
+    
+                if(isset($person)){
+                    $response = ['res' => ['message' => 'Los datos del usuario fueron actualizados correctamente'], 'status' => 200];
+                } else {
+                    $response = ['res' => ['message' => 'No se pudo actualizar el usuario, intentalo de nuevo'], 'status' => 400];
+                }
+    
+                return response($response['res'], $response['status']);
+    
+            } else {
+                return $this->abortResponse();
+            }
+        } else if($req->isMethod('PATCH')){
+            $response = $this->destroy($req, $id);
 
+            return response($response['res'], $response['status']);
+        }
+    }
+
+    public function destroy($req, $id){
+        if($req->permissions['delete']){
             $person = Persons::where('id', $id)->first();
 
             if($person){
-                $employee = $person->employee()->where('idpersona', $id)->first();
-                $customer = $person->customer()->where('idpersona', $id)->first();
+                $status = ['estado' => 0, 'fechamodificacion' => date('Y-m-d')];
 
-                if($employee){
-                    array_push($fields, 'id_city', 'first_name', 'last_name');
-                    $userType = 'usuarios';
-    
-                } else if($customer) $userType = 'clientes';
-
-                $validator = $this->validateUserFields($req, $fields, $userType);
-                if($validator) return response($validator['res'], $validator['status']);  
-    
-                if($person && $employee){
-                    $person->update([
-                        'tipodocumento' => $req->id_type,
-                        'idciudad' => $req->id_city,
-                        'genero' => $req->id_gender,
-                        'nombres' => $req->first_name,
-                        'apellidos' => $req->last_name,
-                        'numerodocumento' => $req->id_number,
-                        'fechanacimiento' => date($req->birthday),
-                        'fechamodificacion' =>  date('Y-m-d')
-                    ]);
-    
-                    $person->observation()->create($this->setObservation($req, $person));
-                    $person->employee()->email = $req->email;
-                    $person->save();
-                    
-                } else if($person && $customer){
-                    $person->update([
-                        'tipodocumento' => $req->id_type,
-                        'genero' => $req->id_gender,
-                        'numerodocumento' => $req->id_number,
-                        'fechanacimiento' => $req->birthday ? date($req->birthday) : null,
-                        'fechamodificacion' =>  date('Y-m-d')
-                    ]);
-
-                    $person->observation()->create($this->setObservation($req, $person));
-                    $person->customer()->email = $req->email;
-                    $person->save();
-                }
+                $person->update($status);
+                $person->employee()->update($status);
+                $person->address()->update(['estadodireccion' => 0, 'fechamodificacion' => date('Y-m-d')]);
+                $person->phone()->update($status);
+                $person->pqrsf()->update($status);
+                $person->observation()->update($status);
             }
 
             if(isset($person)){
-                $response = ['res' => ['message' => 'Los datos del usuario fueron actualizados correctamente'], 'status' => 200];
+                return ['res' => ['message' => 'El usuario fue eliminado correctamente'], 'status' => 200];
             } else {
-                $response = ['res' => ['message' => 'No se pudo actualizar el usuario, intentalo de nuevo'], 'status' => 400];
+                return ['res' => ['message' => 'Hubo un error al eliminar el usuario, intentalo de nuevo'], 'status' => 400];
             }
-
-            return response($response['res'], $response['status']);
 
         } else {
             return $this->abortResponse();
         }
-    }
-
-    public function destroy($id){
-        //
     }
 }

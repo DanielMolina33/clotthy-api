@@ -14,9 +14,10 @@ Route::group(['middleware' => ['cors', 'json.response']], function(){
 
 //Employees routes
 Route::group(['middleware' => ['cors', 'json.response', 'auth:employee']], function(){
-    Route::resource("person", "App\Http\Controllers\person\PersonController");
+    Route::resource("person", "App\Http\Controllers\person\PersonController")->except(['create', 'edit']);
     Route::resource("parameter", "App\Http\Controllers\parameter\ParameterController")->except(['create', 'edit', 'show']);
     Route::resource("parameter_value", "App\Http\Controllers\parameter\ParameterValueController")->except(['create', 'edit', 'show']);
+    Route::resource("company", "App\Http\Controllers\company\CompanyController");
 });
 
 // Public routes
@@ -33,3 +34,7 @@ Route::get('/logout-customers', function(Request $req){
 Route::get('/logout-employees', function(Request $req){
     dd($req->user()->token()->revoke());
 })->middleware('auth:employee');
+
+Route::fallback(function(){
+    return response()->json(['message' => 'Not Found'], 404);
+});

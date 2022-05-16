@@ -53,12 +53,27 @@ class ValidateFields {
     private function validateIndicative($req, $field){
         $name = 'indicative_'.$field;
         $validator = Validator::make($req->only($name),
-            [$name => 'present|digits_between:0,5']
+            [$name => 'required|digits_between:0,5']
         );
         $this->getErrors($validator->errors()->all());
     }
 
-    private function validateNumberInfo($req, $field){
+    private function validateSocialMedia($req, $field, $name){
+        if($field == 'url'){
+            $validator = Validator::make($req->only($name),
+                [$name => 'required|url|max:45']
+            );
+            $this->getErrors($validator->errors()->all());
+        } else if($field == 'name'){
+            $validator = Validator::make($req->only($name),
+                [$name => 'required|max:45|without_spaces|alpha_num'],
+                ["$name.without_spaces" => "Whitespace not allowed in $name"]
+            );
+            $this->getErrors($validator->errors()->all());
+        }
+    }
+
+    private function validateFieldLength($req, $field){
         if($field == 'cp'){
             if(is_numeric($req->cp_length) && strlen($req->cp_length) == 1){
                 for($i = 1; $i <= $req->cp_length; $i++){
@@ -79,6 +94,15 @@ class ValidateFields {
                         [$name => 'present|digits_between:0,20']
                     );
                     $this->getErrors($validator->errors()->all());
+                }
+            }
+        } else if($field == 'sm'){
+            if(is_numeric($req->sm_length) && strlen($req->sm_length) == 1){
+                for($i = 1; $i <= $req->sm_length; $i++){
+                    $url = $field.'_url_'.$i;
+                    $name = $field.'_name_'.$i;
+                    $this->validateSocialMedia($req, 'url', $url);
+                    $this->validateSocialMedia($req, 'name', $name);
                 }
             }
         }
@@ -150,6 +174,14 @@ class ValidateFields {
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
+                case 'nit':
+                    $companyId = (int)($req->route('company'));
+                    $unique = "|unique:empresas,nitempresa,".$companyId;
+                    $validator = Validator::make($req->only('nit'),
+                        ['nit' => "required|max:45|alpha_num".$unique],
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
                 case 'address':
                     $validator = Validator::make($req->only('address'),
                         ['address' => 'required|max:45|string']
@@ -157,7 +189,7 @@ class ValidateFields {
                     $this->getErrors($validator->errors()->all());
                     break;
                 case 'cellphone':
-                    $this->validateNumberInfo($req, 'cp');
+                    $this->validateFieldLength($req, 'cp');
                     break;
                 case 'cp_length':
                     $validator = Validator::make($req->only('cp_length'),
@@ -166,11 +198,20 @@ class ValidateFields {
                     $this->getErrors($validator->errors()->all());
                     break;
                 case 'phone':
-                    $this->validateNumberInfo($req, 'p');
+                    $this->validateFieldLength($req, 'p');
                     break;
                 case 'p_length':
                     $validator = Validator::make($req->only('p_length'),
                         ['p_length' => 'nullable|digits:1']
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
+                case 'sm':
+                    $this->validateFieldLength($req, 'sm');
+                    break;
+                case 'sm_length':
+                    $validator = Validator::make($req->only('sm_length'),
+                        ['sm_length' => 'required|digits:1']
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
@@ -232,6 +273,9 @@ class ValidateFields {
                 case 'observations':
                     $this->validateAlphaNumSpaces($req, 'observations', 'required', 300);
                     break;
+                case 'company_name':
+                    $this->validateAlphaNumSpaces($req, 'company_name', 'required');
+                    break;
             }
         }
 
@@ -240,5 +284,32 @@ class ValidateFields {
         } else {
             return false;
         }
+    }
+
+    public function validateWithPhone($req, $fields, $phone_length, $sm_length=null, $userType=null){
+        $cp_gt = null;
+        $p_gt = null;
+        $sm_gt = null;
+        $messages = [];
+        
+        if(in_array('cp_length', $fields)){
+            $cp_gt = intval($req->cp_length) > $phone_length;
+            if($cp_gt) array_push($messages, "cp length cannot be greater than $phone_length");
+        }
+
+        if(in_array('p_length', $fields)){
+            $p_gt = intval($req->p_length) > $phone_length;
+            if($p_gt) array_push($messages, "p length cannot be greater than $phone_length");
+        }
+
+        if(in_array('sm_length', $fields)){
+            $sm_gt = intval($req->sm_length) > $sm_length;
+            if($sm_gt) array_push($messages, "sm length cannot be greater than $sm_length");
+        }
+
+        if($cp_gt || $p_gt || $sm_gt) return ['res' => ['message' => $messages], 'status' => 400];
+          
+        $validator = $this->validate($req, $fields, $userType);
+        return $validator;
     }
 }
