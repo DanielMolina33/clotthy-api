@@ -16,7 +16,7 @@ class CompanyController extends Controller {
     public function __construct(){
         $this->validateFields = new ValidateFields();
 
-        $required_role = 'administrador general';
+        $required_role = serialize(['administrador general']);
         $required_module = "empresa";
         $this->middleware("roles:$required_role,$required_module");
     }
@@ -28,10 +28,10 @@ class CompanyController extends Controller {
     public function index(Request $req){
         if($req->permissions['read']){
             $pagination = env('PAGINATION_PER_PAGE');
-            $company = Companies::where('estado', 1)->simplePaginate($pagination);
+            $companies = Companies::where('estado', 1)->simplePaginate($pagination);
 
-            if(isset($company)){
-                $response = ['res' => ['data' => $company], 'status' => 200];
+            if(isset($companies)){
+                $response = ['res' => ['data' => $companies], 'status' => 200];
             } else {
                 $response = ['res' => ['message' => 'Hubo un error al obtener los datos de las empresas, intentalo de nuevo'], 'status' => 400];
             }
@@ -39,7 +39,7 @@ class CompanyController extends Controller {
             return response($response['res'], $response['status']);
 
         } else {
-            $this->abortResponse();
+            return $this->abortResponse();
         }
     }
 
@@ -82,12 +82,33 @@ class CompanyController extends Controller {
             return response($response['res'], $response['status']);
             
         } else {
-            $this->abortResponse();
+            return $this->abortResponse();
         }
     }
 
-    public function show($id){
-        //
+    public function show(Request $req, $id){
+        if($req->permissions['read']){
+            $company = Companies::where('estado', 1)->where('id', $id)->first();
+
+            if($company){
+                $socialMedia = $company->socialMedia()->get();
+                $phones = $company->phone()->get();
+
+                $company->redessociales = $socialMedia;
+                $company->telefonos = $phones;
+            }
+
+            if(isset($company)){
+                $response = ['res' => ['data' => $company], 'status' => 200];
+            } else {
+                $response = ['res' => ['message' => 'Hubo un error al obtener los datos de las empresas, intentalo de nuevo'], 'status' => 400];
+            }
+    
+            return response($response['res'], $response['status']);
+
+        } else {
+            return $this->abortResponse();
+        }
     }
 
     public function edit(Request $req, $id){
@@ -97,6 +118,7 @@ class CompanyController extends Controller {
     // _method: PUT required field
     public function update(Request $req, $id){
         if($req->permissions['update']){
+            //PUT method, in future PATCH method could be implement for delete.
             if($req->isMethod('PUT')){
                 $validator = $this->validateFields->validateWithPhone($req, [
                     'company_name', 'nit', 'id_city', 'sm', 'sm_length', 'phone',
@@ -132,7 +154,7 @@ class CompanyController extends Controller {
             }
 
         } else {
-            $this->abortResponse();
+            return $this->abortResponse();
         }
     }
 

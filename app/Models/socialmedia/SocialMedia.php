@@ -19,4 +19,8 @@ class SocialMedia extends Model {
         'fechamodificacion'
     ];
 
+    protected $casts = [
+        'id' => 'int',
+        'idempresa' => 'int'
+    ];
 }

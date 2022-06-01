@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\validations;
 
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ValidateFields {
     private $today, $someTimeAgo;
@@ -26,6 +27,10 @@ class ValidateFields {
         Validator::extend('alpha_num_spaces', function($attr, $value){
             return preg_match_all('/^[a-zA-ZÀ-ÿ0-9\s\,\.]+$/', $value);
         });
+
+        Validator::extend('only_numbers', function($attr, $value){
+            return preg_match_all('/^[0-9]+$/', $value);
+        });
     }
 
     private function getErrors($validations){
@@ -37,7 +42,7 @@ class ValidateFields {
     private function validateString($req, $field, $length=45){
         $validator = Validator::make($req->only($field),
             [$field => "required|max:$length|only_letters"],
-            ["$field.only_letters" => "The $field must only contain letters."]
+            ["$field.only_letters" => "El campo $field Solo puede contener letras."]
         );
         $this->getErrors($validator->errors()->all());
     }
@@ -45,9 +50,9 @@ class ValidateFields {
     private function validateAlphaNumSpaces($req, $field, $required='required', $length=45){
         $validator = Validator::make($req->only($field),
             [$field => "$required|max:$length|alpha_num_spaces"],
-            ["$field.alpha_num_spaces" => "$field cannot contain special characters"]
+            ["$field.alpha_num_spaces" => "El campo $field No puede contener caracteres especiales"]
         );
-    $this->getErrors($validator->errors()->all());
+        $this->getErrors($validator->errors()->all());
     }
 
     private function validateIndicative($req, $field){
@@ -67,7 +72,7 @@ class ValidateFields {
         } else if($field == 'name'){
             $validator = Validator::make($req->only($name),
                 [$name => 'required|max:45|without_spaces|alpha_num'],
-                ["$name.without_spaces" => "Whitespace not allowed in $name"]
+                ["$name.without_spaces" => "Los espacios en blanco no son permitidos en el campo $name"]
             );
             $this->getErrors($validator->errors()->all());
         }
@@ -108,6 +113,26 @@ class ValidateFields {
         }
     }
 
+    private function validateValuesIn($req, $field, $values, $isPrice=false){
+        $min = $values[0];
+        $max = $values[1];
+
+        $validator = Validator::make($req->only($field),
+            [$field => "required|only_numbers|digits_between:$min,$max"],
+            ["$field.only_numbers" => "El campo $field solo puede contener numeros enteros"]
+        );
+        $this->getErrors($validator->errors()->all());
+    }
+
+    private function validateRoleId($req){
+        foreach($req->roles as $role){
+            $validator = Validator::make(['role' => $role],
+                ['role' => "required|numeric|gt:0"],
+            );
+            $this->getErrors($validator->errors()->all());
+        }
+    }
+
     private function validateForeignId($req, $field, $isCustomer=false){
         $isRequired = $isCustomer ? 'nullable' : 'required';
         $validator = Validator::make($req->only($field),
@@ -123,7 +148,7 @@ class ValidateFields {
                     $validator = Validator::make($req->only('username'),
                         ['username' => 'required|max:45|without_spaces|alpha_num'],
                         [
-                            'username.without_spaces' => 'Whitespace not allowed in username'
+                            'username.without_spaces' => 'Los espacios en blanco no son permitidos en el campo username'
                         ]
                     );
                     $this->getErrors($validator->errors()->all());
@@ -132,7 +157,7 @@ class ValidateFields {
                     // email length 100 in Database
                     $userId = (int)($req->route('person'));
                     $isRequired = $userType !== 'clientes' ? 'required' : 'nullable';
-                    $unique = $userType !== null ? "|unique:$userType,email,".$userId : "";
+                    $unique = $userType !== null ? "|unique:$userType,email,".$userId.",idpersona" : "";
                     $validator = Validator::make($req->only('email'),
                         ['email' => "$isRequired|string|email|max:100".$unique],
                     );
@@ -141,7 +166,7 @@ class ValidateFields {
                 case 'password':
                     $validator = Validator::make($req->only('password', 'password_confirmation'),
                         ['password' => 'required|string|min:10|confirmed|without_spaces'],
-                        ['password.without_spaces' => 'Whitespace not allowed in password']
+                        ['password.without_spaces' => 'Los espacios en blanco no son permitidos en el campo password']
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
@@ -223,8 +248,24 @@ class ValidateFields {
                     $this->getErrors($validator->errors()->all());
                     break;
                 case 'image':
-                    $validator = Validator::make($req->only('image'),
-                        ['image' => "nullable|mimes:jpg,jpeg,png,webp|max:2000"]
+                    $rule = ['image' => "nullable|mimes:jpg,jpeg,png,webp|max:2000"];
+                    if(isset($req->images)){
+                        foreach($req->images as $i => $image){
+                            $isRequired = $i+1 == 1 ? 'required' : 'nullable';
+                            $validator = Validator::make(['image' => $image], 
+                                ['image' => "$isRequired|mimes:jpg,jpeg,png,webp|max:2000"]
+                            );
+                            $this->getErrors($validator->errors()->all());
+                        }
+                    } else {
+                        $validator = Validator::make($req->only('image'), $rule);
+                        $this->getErrors($validator->errors()->all());
+                    }
+
+                    break;
+                case 'invoice':
+                    $validator = Validator::make($req->only('invoice'), 
+                        ['invoice' => 'required|mimes:pdf|max:2000']
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
@@ -271,10 +312,139 @@ class ValidateFields {
                     $this->getErrors($validator->errors()->all());
                     break;
                 case 'observations':
-                    $this->validateAlphaNumSpaces($req, 'observations', 'required', 300);
+                    $validator = Validator::make($req->only('observations'),
+                        ['observations' => "required|max:300|string"],
+                    );
+                    $this->getErrors($validator->errors()->all());
                     break;
                 case 'company_name':
                     $this->validateAlphaNumSpaces($req, 'company_name', 'required');
+                    break;
+                case 'role_name':
+                    $this->validateString($req, 'role_name');
+                    break;
+                case 'role_desc':
+                    $this->validateAlphaNumSpaces($req, 'role_desc', 'nullable', 300);
+                    break;
+                case 'module_name':
+                    $this->validateString($req, 'module_name');
+                    break;
+                case 'module_desc':
+                    $this->validateAlphaNumSpaces($req, 'module_desc', 'nullable', 300);
+                    break;
+                case 'roles':
+                    $this->validateRoleId($req);
+                    break;
+                case 'role_id':
+                    $except = (int)($req->route('module_role'));
+                    $moduleId = $req->module_id;
+                    $validator = Validator::make($req->only('role_id'),
+                        ['role_id' => "required|numeric|gt:0|unique:modulos_roles,idroles,$except,id,idmodulos,$moduleId"],
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
+                case 'module_id':
+                    $this->validateForeignId($req, 'module_id');
+                    break;
+                case 'create':
+                    $this->validateValuesIn($req, 'create', [0, 1]);
+                    break;
+                case 'update':
+                    $this->validateValuesIn($req, 'update', [0, 1]);
+                    break;
+                case 'read':
+                    $this->validateValuesIn($req, 'read', [0, 1]);
+                    break;
+                case 'delete':
+                    $this->validateValuesIn($req, 'delete', [0, 1]);
+                    break;
+                case 'id_color':
+                    $this->validateForeignId($req, 'id_color');
+                    break;
+                case 'id_size':
+                    $this->validateForeignId($req, 'id_size');
+                    break;
+                case 'id_subcategory':
+                    $this->validateForeignId($req, 'id_subcategory');
+                    break;
+                case 'id_order':
+                    $this->validateForeignId($req, 'id_order');
+                    break;
+                case 'id_prod':
+                    $this->validateForeignId($req, 'id_prod');
+                    break;
+                case 'prod_ref':
+                    $except = (int)($req->route('product'));
+                    $subcategoryId = (int)($req->id_subcategory);
+                    $validator = Validator::make($req->only('prod_ref'),
+                        ['prod_ref' => "required|max:45|alpha_num|unique:productos,referenciaprod,$except,id,subcategoria,$subcategoryId"],
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
+                case 'prod_name':
+                    if($req->prod_names){
+                        foreach($req->prod_names as $prodName){
+                            $validator = Validator::make(['prod_name' => $prodName],
+                                ['prod_name' => 'required|max:45|alpha_num_spaces'],
+                                ['prod_name.alpha_num_spaces' => 'El campo prod_names no puede contener caracteres especiales']
+                            );
+                            $this->getErrors($validator->errors()->all());
+                        }
+                    } else {
+                        $this->validateAlphaNumSpaces($req, 'prod_name');
+                    }
+                    break;
+                case 'prod_desc':
+                    $validator = Validator::make($req->only('prod_desc'),
+                        ['prod_desc' => "required|max:300|string"],
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
+                case 'stock':
+                    $this->validateValuesIn($req, 'stock', [1, 10]);
+                    break;
+                case 'final_price':
+                    $this->validateValuesIn($req, 'final_price', [1, 10]);
+                    break;
+                case 'offer_price':
+                    $this->validateValuesIn($req, 'offer_price', [1, 10]);
+                    break;
+                case 'prod_amount':
+                    if($req->prod_amounts){
+                        foreach($req->prod_amounts as $prodAmount){
+                            $validator = Validator::make(['prod_amount' => $prodAmount],
+                                ['prod_amount' => 'required|only_numbers|digits_between:1,11'],
+                                ['prod_amount.only_numbers' => "El campo prod_amounts solo puede contener numeros enteros"]
+                            );
+                            $this->getErrors($validator->errors()->all());
+                        }
+                    } else {
+                        $this->validateValuesIn($req, 'prod_amount', [1, 11]);
+                    }
+                    break;
+                case 'purchase_price':
+                    $this->validateValuesIn($req, 'purchase_price', [1, 10]);
+                    break;
+                case 'profit_percent':
+                    $this->validateValuesIn($req, 'profit_percent', [1, 11]);
+                    break;
+                case 'offer_percent':
+                    $this->validateValuesIn($req, 'offer_percent', [1, 11]);
+                    break;
+                case 'id_supplier':
+                    $this->validateForeignId($req, 'id_supplier');
+                    break;
+                case 'order_status':
+                    $this->validateForeignId($req, 'order_status');
+                    break;
+                case 'applicant':
+                    $this->validateString($req, 'applicant');
+                    break;
+                case 'order_desc':
+                    $validator = Validator::make($req->only('order_desc'),
+                        ['order_desc' => "required|max:300|string"],
+                    );
+                    $this->getErrors($validator->errors()->all());
                     break;
             }
         }
@@ -294,17 +464,17 @@ class ValidateFields {
         
         if(in_array('cp_length', $fields)){
             $cp_gt = intval($req->cp_length) > $phone_length;
-            if($cp_gt) array_push($messages, "cp length cannot be greater than $phone_length");
+            if($cp_gt) array_push($messages, "cp length no puede ser mayor que $phone_length");
         }
 
         if(in_array('p_length', $fields)){
             $p_gt = intval($req->p_length) > $phone_length;
-            if($p_gt) array_push($messages, "p length cannot be greater than $phone_length");
+            if($p_gt) array_push($messages, "p length no puede ser mayor que $phone_length");
         }
 
         if(in_array('sm_length', $fields)){
             $sm_gt = intval($req->sm_length) > $sm_length;
-            if($sm_gt) array_push($messages, "sm length cannot be greater than $sm_length");
+            if($sm_gt) array_push($messages, "sm length no puede ser mayor que $sm_length");
         }
 
         if($cp_gt || $p_gt || $sm_gt) return ['res' => ['message' => $messages], 'status' => 400];

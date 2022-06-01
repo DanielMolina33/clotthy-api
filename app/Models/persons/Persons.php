@@ -32,6 +32,12 @@ class Persons extends Model {
         'fechamodificacion'
     ];
 
+    protected $casts = [
+        'id' => 'int',
+        'tipodocumento' => 'int',
+        'genero' => 'int',
+    ];
+
     public function employee(){
         return $this->hasMany(Employees::class, 'idpersona');
     }

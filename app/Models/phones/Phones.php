@@ -23,6 +23,14 @@ class Phones extends Model {
         'fechamodificacion'
     ];
 
+    protected $casts = [
+        'id' => 'int',
+        'tiponumero' => 'int',
+        'idproveedor' => 'int',
+        'idempresa' => 'int',
+        'idpersona' => 'int',
+    ];
+
     function parameterValue(){
         return $this->hasMany(ParametersValues::class, 'tiponumero');
     }

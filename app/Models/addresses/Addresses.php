@@ -21,4 +21,11 @@ class Addresses extends Model {
         'fechacreacion',
         'fechamodificacion'
     ];
+
+    protected $casts = [
+        'id' => 'int',
+        'idpersona' => 'int',
+        'idproveedor' => 'int',
+        'tipodireccion' => 'int',
+    ];
 }

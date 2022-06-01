@@ -9,19 +9,19 @@ use Illuminate\Support\Facades\DB;
 class UserRoles extends Controller {
     public $roles;
 
-    public function __construct($req, $role, $module){
+    public function __construct($req, $roles, $module){
         $id = $req->user()->only('id');
-        $this->roles = $this->getRoles($id, $role, $module);
+        $this->roles = $this->getRoles($id, $roles, $module);
     }
 
-    private function getRoles($id, $role, $module){
+    private function getRoles($id, $roles, $module){
         $roles = DB::table("usuarios")
         ->join('usuario_modulo_rol', 'usuarios.id', '=', 'usuario_modulo_rol.idusuario')
         ->join('modulos_roles', 'modulos_roles.id', '=', 'usuario_modulo_rol.idmodrol')
         ->join('modulos', 'modulos.id', '=', 'modulos_roles.idModulos')
         ->join('roles', 'roles.id', '=', 'modulos_roles.idRoles')
         ->where('usuarios.id', '=', $id)
-        ->where('roles.nombrerol', '=', $role)
+        ->whereIn('roles.nombrerol', $roles)
         ->where('modulos.nombremodulo', '=', $module)
         ->select('roles.nombrerol', 'modulos.nombremodulo', 
         'modulos_roles.crear', 'modulos_roles.leer', 'modulos_roles.actualizar', 'modulos_roles.eliminar')

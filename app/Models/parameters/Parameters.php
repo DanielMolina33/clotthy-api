@@ -21,6 +21,10 @@ class Parameters extends Model {
         'fechamodificacion'
     ];
 
+    protected $casts = [
+        'id' => 'int'
+    ];
+
     public function parameterValue(){
         return $this->hasMany(ParametersValues::class, 'idtipo');
     }

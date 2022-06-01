@@ -16,7 +16,7 @@ class PqrsfController extends Controller {
     public function __construct(){
         $this->validateFields = new ValidateFields();
 
-        $required_role = 'administrador de pqrsf';
+        $required_role = serialize(['administrador de pqrsf', 'administrador de usuarios']);
         $required_module = "pqrsf";
         $this->middleware('auth:employee')->except(['store', 'myPqrsf']);   
         $this->middleware("roles:$required_role,$required_module")->except(['store', 'myPqrsf']);
@@ -142,7 +142,7 @@ class PqrsfController extends Controller {
 
         if($pqrsf) {
             $pqrsf->imgayuda = ImageController::storeImage('pqrsf', $req->file('image'));
-            $pqrsf->save();
+            $pqrsf->save(); 
         }
 
         if(isset($pqrsf)){
@@ -154,8 +154,21 @@ class PqrsfController extends Controller {
         return response($response['res'], $response['status']);
     }
 
-    public function show($id){
-        //
+    public function show(Request $req, $id){
+        if($req->permissions['read']){
+            $pqrsf = Pqrsf::where('estado', 1)->where('id', $id)->first();
+
+            if(isset($pqrsf)){
+                $response = ['res' => ['data' => $pqrsf], 'status' => 200];
+            } else {
+                $response = ['res' => ['message' => 'Hubo un error al obtener la pqrsf, intentalo de nuevo'], 'status' => 400];
+            }
+
+            return response($response['res'], $response['status']);
+
+        } else {
+            return $this->abortResponse('Forbidden');
+        }
     }
 
     public function edit($id){
@@ -173,7 +186,7 @@ class PqrsfController extends Controller {
             ]);
 
             if(isset($pqrsf)){
-                $response = ['res' => ['message' => 'Estado de la solicitud pqrsf correctamente'], 'status' => 200];
+                $response = ['res' => ['message' => 'Estado de la solicitud pqrsf actualizado correctamente'], 'status' => 200];
             } else {
                 $response = ['res' => ['message' => 'Hubo un error al actualizar la solicitud de la pqrsf, intentalo de nuevo'], 'status' => 400];
             }

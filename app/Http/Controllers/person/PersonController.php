@@ -13,9 +13,11 @@ use App\Models\employees\Employees;
 use App\Models\customers\Customers;
 use App\Models\parameters\ParametersValues;
 use App\Models\pqrsf\Pqrsf;
-use App\Http\Controllers\image\ImageController;
+use App\Models\roles\UserModulesRoles;
+use App\Models\roles\ModulesRoles;
 use App\Http\Controllers\address\AddressController;
 use App\Http\Controllers\utils\StorePhone;
+use App\Http\Controllers\utils\Observations;
 
 class PersonController extends Controller {
     private $validateFields;
@@ -23,7 +25,7 @@ class PersonController extends Controller {
     function __construct(){
         $this->validateFields = new ValidateFields();
 
-        $required_role = 'administrador de usuarios';
+        $required_role = serialize(['administrador de usuarios']);
         $required_module = "usuarios";
         $this->middleware("roles:$required_role,$required_module");
     }
@@ -60,16 +62,16 @@ class PersonController extends Controller {
         return collect($users)->paginate($pagination); 
     }
 
-    private function setObservation($req, $person){
-        return [
-            'idpersona' => $person->id,
-            'identradaproductos' => null,
-            'observacion' => $req->observations, 
-            'estado' => 1,
-            'fechacreacion' => date('Y-m-d'),
-            'fechamodificacion' => date('Y-m-d')
-        ];
-    }
+    // private function setObservation($req, $person){
+    //     return [
+    //         'idpersona' => $person->id,
+    //         'identradaproductos' => null,
+    //         'observacion' => $req->observations, 
+    //         'estado' => 1,
+    //         'fechacreacion' => date('Y-m-d'),
+    //         'fechamodificacion' => date('Y-m-d')
+    //     ];
+    // }
 
     public function index(Request $req){
         if($req->permissions['read']){
@@ -92,7 +94,7 @@ class PersonController extends Controller {
         }
     }
 
-    public function create(){
+    public function create(Request $req){
         //
     }
 
@@ -101,7 +103,7 @@ class PersonController extends Controller {
             // Image deleted because admin is not who uploads employee's avatar
             $validator = $this->validateFields->validateWithPhone($req, [
                 'id_type', 'id_city', 'id_gender', 'username', 'email', 
-                'password', 'first_name', 'last_name', 'id_number', 'birthday',
+                'password', 'first_name', 'last_name', 'roles', 'id_number', 'birthday',
                 'id_address_type', 'address', 'postal_code', 'complements',
                 'cellphone', 'phone', 'cp_length', 'p_length', 'indicative'
             ], 3, null, 'usuarios');
@@ -125,7 +127,7 @@ class PersonController extends Controller {
                 // $user->avatar = ImageController::storeImage('avatars', $req->file('image'));
                 // $user->save();
                 
-                $user->employee()->create([
+                $employee = $user->employee()->create([
                     'nombreusuario' => $req->username,
                     'idpersona' => $user->id,
                     'email' => $req->email,
@@ -149,6 +151,14 @@ class PersonController extends Controller {
                 
                 StorePhone::store($req, $user, 'persona', 'cp', 'create');
                 StorePhone::store($req, $user, 'persona', 'p', 'create');
+
+                if($employee){
+                    if(count($req->roles) > 0){
+                        foreach($req->roles as $role){
+                            $employee->userModuleRole()->attach($role);
+                        }
+                    }
+                }
             }
     
             if(isset($user)){
@@ -178,9 +188,27 @@ class PersonController extends Controller {
             $person = Persons::where('estado', 1)->where('id', $id)->first();
 
             if($person){
+                $personRoles = [];
                 $address = $person->address()->get();
                 $numbers = $person->phone()->get();
+                $employee = $person->employee()->first();
+                $userModulesRoles = UserModulesRoles::where('idusuario', $employee->id)->get();
 
+                foreach($userModulesRoles as $role){
+                    $roleId = ModulesRoles::where('id', $role->idmodrol)->get()->map(function($item){
+                        unset($item->crear);
+                        unset($item->actualizar);
+                        unset($item->leer);
+                        unset($item->eliminar);
+                        unset($item->fechacreacion);
+                        unset($item->fechamodificacion);
+                        return $item;
+                    });
+                    array_push($personRoles, $roleId);
+                }
+
+                $person->roles = $personRoles;
+                $person->usuario = $employee;
                 $person->direccion = $address;
                 $person->numeros = $numbers;
             }
@@ -214,7 +242,7 @@ class PersonController extends Controller {
                     $customer = $person->customer()->where('idpersona', $id)->first();
     
                     if($employee){
-                        array_push($fields, 'id_city', 'first_name', 'last_name');
+                        array_push($fields, 'roles', 'id_city', 'first_name', 'last_name');
                         $userType = 'usuarios';
         
                     } else if($customer) $userType = 'clientes';
@@ -234,9 +262,26 @@ class PersonController extends Controller {
                             'fechamodificacion' =>  date('Y-m-d')
                         ]);
         
-                        $person->observation()->create($this->setObservation($req, $person));
-                        $person->employee()->email = $req->email;
+                        $person->observation()->create(Observations::setObservation($req, $person->id, null));
+                        $person->employee()->update(['email' => $req->email, 'fechamodificacion' => date('Y-m-d')]);
                         $person->save();
+
+                        $employee = Employees::where('idpersona', $person->id)->first();
+                        $roles = UserModulesRoles::where('idusuario', $employee->id)->get();
+
+                        if(count($roles) > 0){
+                            foreach($req->roles as $key => $newRole){
+                                $roleId = $roles[$key]->id;
+                                UserModulesRoles::where('id', $roleId)->update([
+                                    'idmodrol' => $newRole
+                                ]);
+                            }
+                        } else {
+                            foreach($req->roles as $role){
+                                $employee->userModuleRole()->attach($role);
+                            }
+                        }
+
                         
                     } else if($person && $customer){
                         $person->update([
@@ -247,8 +292,8 @@ class PersonController extends Controller {
                             'fechamodificacion' =>  date('Y-m-d')
                         ]);
     
-                        $person->observation()->create($this->setObservation($req, $person));
-                        $person->customer()->email = $req->email;
+                        $person->observation()->create(Observations::setObservation($req, $person->id, null));
+                        $person->customer()->update(['email' => $req->email, 'fechamodificacion' => date('Y-m-d')]);
                         $person->save();
                     }
                 }
@@ -256,7 +301,7 @@ class PersonController extends Controller {
                 if(isset($person)){
                     $response = ['res' => ['message' => 'Los datos del usuario fueron actualizados correctamente'], 'status' => 200];
                 } else {
-                    $response = ['res' => ['message' => 'No se pudo actualizar el usuario, intentalo de nuevo'], 'status' => 400];
+                    $response = ['res' => ['message' => 'No se pudo actualizar el usuario. O el usuario no existe, intentalo de nuevo'], 'status' => 400];
                 }
     
                 return response($response['res'], $response['status']);
@@ -284,6 +329,15 @@ class PersonController extends Controller {
                 $person->phone()->update($status);
                 $person->pqrsf()->update($status);
                 $person->observation()->update($status);
+
+                $employee = Employees::where('idpersona', $id)->first();
+                $roles = UserModulesRoles::where('idusuario', $employee->id)->get();
+
+                foreach($roles as $role){
+                    $roleId = $role->id;
+                    UserModulesRoles::where('id', $roleId)->delete();
+                }
+
             }
 
             if(isset($person)){

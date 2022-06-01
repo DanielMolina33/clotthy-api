@@ -1,21 +1,20 @@
 <?php
 
-namespace App\Models\parameters;
+namespace App\Models\comments;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\parameters\Parameters;
 
-class ParametersValues extends Model {
+class Comments extends Model {
     use HasFactory;
 
-    protected $table = "tipos";
-    public $timestamps = false;
+    protected $table = "comentarios";
+    public $timestamps = false; 
     protected $hidden = ['estado'];
     protected $fillable = [
-        'idtipo',
-        'nombretipos',
-        'descripciontipos',
+        'idprod',
+        'idcliente',
+        'comentario',
         'estado',
         'fechacreacion',
         'fechamodificacion'
@@ -23,6 +22,7 @@ class ParametersValues extends Model {
 
     protected $casts = [
         'id' => 'int',
-        'idtipo' => 'int'
+        'idprod' => 'int',
+        'idcliente' => 'int'
     ];
 }

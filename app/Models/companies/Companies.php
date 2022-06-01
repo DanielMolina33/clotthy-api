@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 use App\Models\socialmedia\SocialMedia;
-use App\Models\cities\Cities;
 use App\Models\phones\Phones;
 
 class Companies extends Model {
@@ -22,6 +21,11 @@ class Companies extends Model {
         'estado',
         'fechacreacion',
         'fechamodificacion'
+    ];
+
+    protected $casts = [
+        'id' => 'int',
+        'iciudad' => 'int'
     ];
 
     public function socialMedia(){

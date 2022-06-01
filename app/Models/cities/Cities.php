@@ -18,4 +18,8 @@ class Cities extends Model {
         'fechamodificacion'
     ];
 
+    protected $casts = [
+        'id' => 'int',
+        'iddepar' => 'int'
+    ];
 }

@@ -19,4 +19,10 @@ class Observations extends Model {
         'fechacreacion',
         'fechamodificacion'
     ];
+
+    protected $casts = [
+        'id' => 'int',
+        'idpersona' => 'int',
+        'identradaproductos' => 'int'
+    ];
 }

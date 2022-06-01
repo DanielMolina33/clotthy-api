@@ -28,4 +28,11 @@ class Pqrsf extends Model {
         'fechacreacion',
         'fechamodificacion'
     ];
+
+    protected $casts = [
+        'id' => 'int',
+        'idpersona' => 'int',
+        'estadosolicitudpqrsf' => 'int',
+        'tipodocumento' => 'int',
+    ];
 }

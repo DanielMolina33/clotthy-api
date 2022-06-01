@@ -235,16 +235,18 @@ class LoginController extends Controller {
         'modulos_roles.crear', 'modulos_roles.leer', 'modulos_roles.actualizar', 'modulos_roles.eliminar')
         ->get()
         ->map(function($item){
-            return [
-                'role' => $item->nombrerol,
-                'module' => $item->nombremodulo,
-                'permissions' => [
-                    'create' => $item->crear,
-                    'read' => $item->leer,
-                    'update' => $item->actualizar,
-                    'delete' => $item->eliminar
-                ]
-            ];
+                $permissions = [
+                    'role' => $item->nombrerol,
+                    'module' => $item->nombremodulo,
+                    'permissions' => [
+                        'create' => $item->crear,
+                        'read' => $item->leer,
+                        'update' => $item->actualizar,
+                        'delete' => $item->eliminar
+                    ]
+                ];
+
+                return $permissions;
         });
 
         return $employeePermissions;

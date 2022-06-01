@@ -1,28 +1,24 @@
 <?php
 
-namespace App\Models\parameters;
+namespace App\Models\roles;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\parameters\Parameters;
 
-class ParametersValues extends Model {
+class Modules extends Model {
     use HasFactory;
-
-    protected $table = "tipos";
+    protected $table = "modulos";
     public $timestamps = false;
     protected $hidden = ['estado'];
     protected $fillable = [
-        'idtipo',
-        'nombretipos',
-        'descripciontipos',
+        'nombremodulo',    
+        'descripcionmodulo',
         'estado',
         'fechacreacion',
         'fechamodificacion'
     ];
 
     protected $casts = [
-        'id' => 'int',
-        'idtipo' => 'int'
+        'id' => 'int'
     ];
 }

@@ -22,4 +22,9 @@ class Customers extends Authenticatable {
         'fechacreacion',
         'fechamodificacion'
     ];
+
+    protected $casts = [
+        'id' => 'int',
+        'idPersona' => 'int'
+    ];
 }
