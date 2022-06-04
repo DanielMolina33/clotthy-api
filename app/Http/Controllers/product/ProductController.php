@@ -27,6 +27,7 @@ class ProductController extends Controller {
         return abort(response()->json(['message' => 'Forbidden'], 403));
     }
 
+    // Query params -> page, order_by, category, subcategory, search
     public function index(Request $req){
         if($req->permissions['read']){
             $pagination = env('PAGINATION_PER_PAGE');
@@ -70,7 +71,7 @@ class ProductController extends Controller {
         if($req->permissions['create']){
             $validator = $this->validateFields->validate($req, [
                 'id_color', 'id_size', 'id_subcategory', 'id_order', 'prod_ref', 'prod_name', 'image',
-                'invoice', 'prod_desc', 'stock', 'purchase_price', 'profit_percent', 'observations',
+                'invoice', 'prod_desc', 'stock', 'prod_amount', 'purchase_price', 'profit_percent', 'observations',
             ]);
             if($validator) return response($validator['res'], $validator['status']);
 

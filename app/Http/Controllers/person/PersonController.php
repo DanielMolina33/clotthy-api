@@ -25,7 +25,7 @@ class PersonController extends Controller {
     function __construct(){
         $this->validateFields = new ValidateFields();
 
-        $required_role = serialize(['administrador de usuarios']);
+        $required_role = serialize(['administrador de usuarios', 'superuser']);
         $required_module = "usuarios";
         $this->middleware("roles:$required_role,$required_module");
     }
@@ -73,6 +73,7 @@ class PersonController extends Controller {
     //     ];
     // }
 
+    // Query params -> page, search
     public function index(Request $req){
         if($req->permissions['read']){
             $userType = $req->query('user_type');
@@ -192,23 +193,29 @@ class PersonController extends Controller {
                 $address = $person->address()->get();
                 $numbers = $person->phone()->get();
                 $employee = $person->employee()->first();
-                $userModulesRoles = UserModulesRoles::where('idusuario', $employee->id)->get();
+                $customer = $person->customer()->first();
 
-                foreach($userModulesRoles as $role){
-                    $roleId = ModulesRoles::where('id', $role->idmodrol)->get()->map(function($item){
-                        unset($item->crear);
-                        unset($item->actualizar);
-                        unset($item->leer);
-                        unset($item->eliminar);
-                        unset($item->fechacreacion);
-                        unset($item->fechamodificacion);
-                        return $item;
-                    });
-                    array_push($personRoles, $roleId);
+                if($employee){
+                    $userModulesRoles = UserModulesRoles::where('idusuario', $employee->id)->get();
+                    foreach($userModulesRoles as $role){
+                        $roleId = ModulesRoles::where('id', $role->idmodrol)->get()->map(function($item){
+                            unset($item->crear);
+                            unset($item->actualizar);
+                            unset($item->leer);
+                            unset($item->eliminar);
+                            unset($item->fechacreacion);
+                            unset($item->fechamodificacion);
+                            return $item;
+                        });
+
+                        array_push($personRoles, $roleId[0]);
+                    }
+                    $person->usuario = $employee;
+                    $person->roles = $personRoles;
+                } else if($customer){
+                    $person->usuario = $customer;
                 }
 
-                $person->roles = $personRoles;
-                $person->usuario = $employee;
                 $person->direccion = $address;
                 $person->numeros = $numbers;
             }

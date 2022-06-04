@@ -16,7 +16,7 @@ class CompanyController extends Controller {
     public function __construct(){
         $this->validateFields = new ValidateFields();
 
-        $required_role = serialize(['administrador general']);
+        $required_role = serialize(['administrador general', 'superuser']);
         $required_module = "empresa";
         $this->middleware("roles:$required_role,$required_module");
     }
