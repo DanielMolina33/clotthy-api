@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Laravel\Passport\HasApiTokens;
 use App\Models\roles\UserModulesRoles;
 use App\Models\roles\Roles;
+use App\Models\persons\Persons;
 
 class Employees extends Authenticatable {
     use HasFactory, HasApiTokens;
@@ -32,5 +33,9 @@ class Employees extends Authenticatable {
 
     public function userModuleRole(){
         return $this->belongsToMany(Roles::class, 'usuario_modulo_rol', 'idusuario', 'idmodrol');
+    }
+
+    public function person(){
+        return $this->belongsTo(Persons::class, 'idpersona');
     }
 }

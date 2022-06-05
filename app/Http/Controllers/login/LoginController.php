@@ -76,6 +76,7 @@ class LoginController extends Controller {
                 
                 if($user->intentos >= 1 && $user->intentos <= 3){
                     $token = $user->createToken('User logged')->accessToken;
+                    $person = $user->person()->first();
                 }
 
                 return $attemps ? $attemps : [
@@ -83,7 +84,10 @@ class LoginController extends Controller {
                         'user' => [
                             'id' => $user->id,
                             'email' => $user->email,
-                            'username' => $user->nombreusuario
+                            'username' => $user->nombreusuario,
+                            'first_name' => $person->nombres,
+                            'last_name' => $person->apellidos,
+                            'avatar' => $person->avatar
                         ],
                         'token' => $token,
                     ], 

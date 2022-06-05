@@ -6,6 +6,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Passport\HasApiTokens;
+use App\Models\persons\Persons;
 
 class Customers extends Authenticatable {
     use HasFactory, HasApiTokens;
@@ -27,4 +28,8 @@ class Customers extends Authenticatable {
         'id' => 'int',
         'idPersona' => 'int'
     ];
+
+    public function person(){
+        return $this->belongsTo(Persons::class, 'idpersona');
+    }
 }
