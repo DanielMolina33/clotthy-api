@@ -49,14 +49,27 @@ Route::group(['middleware' => ['cors', 'json.response']], function(){
     Route::get("/my_pqrsf", "App\Http\Controllers\pqrsf\PqrsfController@myPqrsf");
 });
 
-// Modificar respuestas
 Route::get('/logout-customers', function(Request $req){
-    dd($req->user()->token()->revoke());
-})->middleware('auth:customer');
+    if(!Auth::guard('customer')->check()){
+        $response = [false, 400];
+    } else {
+        Auth::guard('customer')->user()->token()->revoke();
+        $response = [true, 200];
+    }
+    
+    return response()->json($response[0], $response[1]);
+});
 
 Route::get('/logout-employees', function(Request $req){
-    dd($req->user()->token()->revoke());
-})->middleware('auth:employee');
+    if(!Auth::guard('employee')->check()){
+        $response = [false, 400];
+    } else {
+        Auth::guard('employee')->user()->token()->revoke();
+        $response = [true, 200];
+    }
+    
+    return response()->json($response[0], $response[1]);
+});
 
 // Route not found
 Route::fallback(function(){
