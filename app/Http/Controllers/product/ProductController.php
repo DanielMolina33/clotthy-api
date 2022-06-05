@@ -20,7 +20,8 @@ class ProductController extends Controller {
 
         $required_role = serialize(['administrador de productos', 'superuser']);
         $required_module = "productos";
-        $this->middleware("roles:$required_role,$required_module");
+        $this->middleware('auth:employee')->except(['index', 'show']);
+        $this->middleware("roles:$required_role,$required_module")->except(['index', 'show']);
     }
 
     private function abortResponse(){
@@ -29,38 +30,33 @@ class ProductController extends Controller {
 
     // Query params -> page, order_by, category, subcategory, search
     public function index(Request $req){
-        if($req->permissions['read']){
-            $pagination = env('PAGINATION_PER_PAGE');
-            $orderBy = $req->query('order_by');
-            $category = $req->query('category');
-            $subcategory = $req->query('subcategory');
-            $search = $req->query('search');
+        $pagination = env('PAGINATION_PER_PAGE');
+        $orderBy = $req->query('order_by');
+        $category = $req->query('category');
+        $subcategory = $req->query('subcategory');
+        $search = $req->query('search');
 
-            $products = Products::where('estado', 1)->get();
+        $products = Products::where('estado', 1)->get();
 
-            if($orderBy || $category || $subcategory){
-                $products = $this->filters->filterItems($req, $orderBy, $category, $subcategory);
-            }
-
-            if($search){
-                $products = $products->filter(function($item) use($search) {
-                    return str_contains(strtolower($item->nombreprod), strtolower($search)) ? $item->nombreprod : null;
-                });
-            }
-
-            $products = $products->paginate($pagination);
-            
-            if(isset($products)){
-                $response = ['res' => ['data' => $products], 'status' => 200];
-            } else {
-                $response = ['res' => ['message' => 'Hubo un error al obtener la informacion de los productos, intentalo de nuevo'], 'status' => 400];
-            }
-
-            return response($response['res'], $response['status']);
-
-        } else {
-            return $this->abortResponse();
+        if($orderBy || $category || $subcategory){
+            $products = $this->filters->filterItems($req, $orderBy, $category, $subcategory);
         }
+
+        if($search){
+            $products = $products->filter(function($item) use($search) {
+                return str_contains(strtolower($item->nombreprod), strtolower($search)) ? $item->nombreprod : null;
+            });
+        }
+
+        $products = $products->paginate($pagination);
+        
+        if(isset($products)){
+            $response = ['res' => ['data' => $products], 'status' => 200];
+        } else {
+            $response = ['res' => ['message' => 'Hubo un error al obtener la informacion de los productos, intentalo de nuevo'], 'status' => 400];
+        }
+
+        return response($response['res'], $response['status']);
     }
 
     public function create(){
@@ -130,27 +126,23 @@ class ProductController extends Controller {
     }
 
     public function show(Request $req, $id){
-        if($req->permissions['read']){
-            $product = Products::where('estado', 1)->where('id', $id)->first();
+        $product = Products::where('estado', 1)->where('id', $id)->first();
 
-            if($product){
-                $comments = $product->comment()->get();
-                $ratings = $product->rating()->get();
+        if($product){
+            $comments = $product->comment()->get();
+            $ratings = $product->rating()->get();
 
-                $product->comentarios = $comments;
-                $product->calificaciones = $ratings;
-            }
-
-            if(isset($product)){
-                $response = ['res' => ['data' => $product], 'status' => 200];
-            } else {
-                $response = ['res' => ['message' => 'Hubo un error al obtener la informacion del producto, intentalo de nuevo'], 'status' => 400];
-            }
-
-            return response($response['res'], $response['status']);
-        } else {
-            return $this->abortResponse();
+            $product->comentarios = $comments;
+            $product->calificaciones = $ratings;
         }
+
+        if(isset($product)){
+            $response = ['res' => ['data' => $product], 'status' => 200];
+        } else {
+            $response = ['res' => ['message' => 'Hubo un error al obtener la informacion del producto, intentalo de nuevo'], 'status' => 400];
+        }
+
+        return response($response['res'], $response['status']);
     }
 
     public function edit($id){

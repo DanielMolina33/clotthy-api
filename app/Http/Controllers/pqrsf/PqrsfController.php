@@ -18,7 +18,7 @@ class PqrsfController extends Controller {
 
         $required_role = serialize(['administrador de pqrsf', 'administrador de usuarios']);
         $required_module = "pqrsf";
-        $this->middleware('auth:employee')->except(['store', 'myPqrsf']);   
+        $this->middleware('auth:employee')->except(['store', 'myPqrsf']);
         $this->middleware("roles:$required_role,$required_module")->except(['store', 'myPqrsf']);
     }
 

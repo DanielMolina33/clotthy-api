@@ -34,21 +34,30 @@ Route::group(['middleware' => ['cors', 'json.response', 'auth:employee']], funct
     Route::resource("module", "App\Http\Controllers\sRole\ModuleController")->except(['create', 'edit']);
     Route::resource("module_role", "App\Http\Controllers\sRole\ModuleRoleController")->except(['create', 'edit']);
 
-    // Products
-    Route::resource("product", "App\Http\Controllers\product\ProductController")->except(['create', 'edit']);
+    // Inventory
     Route::resource("inventory", "App\Http\Controllers\product\InventoryController")->except(['create', 'edit', 'destroy']);
+
+    // Orders
     Route::resource("order", "App\Http\Controllers\product\OrderController")->except(['create', 'edit', 'destroy']);
 });
 
-// Pqrsf routes
+// Special routes
 Route::group(['middleware' => ['cors', 'json.response']], function(){
-    // Admin
-    Route::resource("pqrsf", "App\Http\Controllers\pqrsf\PqrsfController")->except(['create', 'edit', 'destroy']);
+    // These all routes can be accessed by employees that have required role and module.
 
-    // User's pqrsf
+    // Pqrsf
+    // Customers and free users can access only certain functions like 'store' and 'myPqrsf'.
+    Route::resource("pqrsf", "App\Http\Controllers\pqrsf\PqrsfController")->except(['create', 'edit', 'destroy']);
     Route::get("/my_pqrsf", "App\Http\Controllers\pqrsf\PqrsfController@myPqrsf");
+
+    // Products
+    // Customers and free users can access only certain functions like 'index' and 'show'.
+    Route::resource("product", "App\Http\Controllers\product\ProductController")->except(['create', 'edit']);
 });
 
+// Logout routes
+
+// Customers
 Route::get('/logout-customers', function(Request $req){
     if(!Auth::guard('customer')->check()){
         $response = [false, 400];
@@ -60,6 +69,7 @@ Route::get('/logout-customers', function(Request $req){
     return response()->json($response[0], $response[1]);
 });
 
+// Employees
 Route::get('/logout-employees', function(Request $req){
     if(!Auth::guard('employee')->check()){
         $response = [false, 400];
