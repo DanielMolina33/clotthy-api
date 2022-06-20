@@ -17,6 +17,7 @@ use App\Models\roles\UserModulesRoles;
 use App\Models\roles\ModulesRoles;
 use App\Http\Controllers\address\AddressController;
 use App\Http\Controllers\utils\StorePhone;
+use App\Http\Controllers\image\ImageController;
 use App\Http\Controllers\utils\Observations;
 
 class PersonController extends Controller {
@@ -27,7 +28,7 @@ class PersonController extends Controller {
 
         $required_role = serialize(['administrador de usuarios', 'superuser']);
         $required_module = "usuarios";
-        $this->middleware("roles:$required_role,$required_module");
+        $this->middleware("roles:$required_role,$required_module")->except(['loadMyProfile', 'updateMyProfile']);
     }
 
     private function abortResponse(){
@@ -62,6 +63,71 @@ class PersonController extends Controller {
         return collect($users)->paginate($pagination); 
     }
 
+    private function employeeProfile($req, $person){
+        $create = 'create';
+        $update = 'update';
+        $address = $person->address()->first();
+        $haveNumbers = count($person->phone()->get()->toArray());
+        $numbersOp = $haveNumbers ? $update : $create;
+        $addressOp = $address ? $update : $create;
+
+        $person->fechamodificacion = date('Y-m-d');
+        $person->avatar = ImageController::updateImage('avatars', $person->avatar, $req->file('image'), 'user');
+        $person->employee()->update(['nombreusuario' => $req->username, 'contrasena' => Hash::make($req->password), 'fechamodificacion' => date('Y-m-d')]);
+        $person->address()->$addressOp([
+            'tipodireccion' => $address ? $address->tipodireccion : null,
+            'direccion' => $req->address,
+            'codigopostal' => $req->postal_code,
+            'complementos' => $req->complements,
+            'estadodireccion' => 1,
+            'fechamodificacion' => date('Y-m-d')
+        ]);
+        
+        StorePhone::store($req, $person, 'persona', 'cp', $numbersOp);
+        StorePhone::store($req, $person, 'persona', 'p', $numbersOp);
+
+        $updated = $person->save();
+        return $updated;
+    }
+
+    private function customerProfile($req, $person){
+        $create = 'create';
+        $update = 'update';
+        $haveAddress = $person->address()->get()->toArray();
+        $haveNumbers = count($person->phone()->get()->toArray());
+        $numbersOp = $haveNumbers ? $update : $create;
+        $addressOp = $haveAddress ? $update : $create;
+
+        $person->update([
+            'tipodocumento' => $req->id_type,
+            'idciudad' => $req->id_city,
+            'genero' => $req->id_gender,
+            'nombres' => $req->first_name,
+            'apellidos' => $req->last_name,
+            'numerodocumento' => $req->id_number,
+            'fechanacimiento' => $req->birthday,
+            'fechamodificacion' => date('Y-m-d')
+        ]);
+
+        $person->avatar = ImageController::updateImage('avatars', $person->avatar, $req->file('image'), 'user');
+        $person->customer()->update(['nombreusuario' => $req->username, 'contrasena' => Hash::make($req->password), 'fechamodificacion' => date('Y-m-d')]);
+
+        $person->address()->$addressOp([
+            'tipodireccion' => null,
+            'direccion' => $req->address,
+            'codigopostal' => $req->postal_code,
+            'complementos' => $req->complements,
+            'estadodireccion' => 1,
+            'fechamodificacion' => date('Y-m-d')
+        ]);
+
+        StorePhone::store($req, $person, 'persona', 'cp', $numbersOp);
+        StorePhone::store($req, $person, 'persona', 'p', $numbersOp);
+
+        $updated = $person->save();
+        return $updated;
+    }
+
     // private function setObservation($req, $person){
     //     return [
     //         'idpersona' => $person->id,
@@ -73,7 +139,7 @@ class PersonController extends Controller {
     //     ];
     // }
 
-    // Query params -> page, search
+    // Query params -> page, search, user_type
     public function index(Request $req){
         if($req->permissions['read']){
             $userType = $req->query('user_type');
@@ -118,7 +184,7 @@ class PersonController extends Controller {
                 'apellidos' => $req->last_name,
                 'numerodocumento' => $req->id_number,
                 'fechanacimiento' => date($req->birthday),
-                'avatar' => null,
+                'avatar' => '',
                 'estado' => 1,
                 'fechacreacion' => date('Y-m-d'),
                 'fechamodificacion' => date('Y-m-d')
@@ -192,6 +258,9 @@ class PersonController extends Controller {
                 $personRoles = [];
                 $address = $person->address()->get();
                 $numbers = $person->phone()->get();
+                $city = $person->city()->first();
+                $department = $city->department()->first();
+                $country = $department->country()->first();
                 $employee = $person->employee()->first();
                 $customer = $person->customer()->first();
 
@@ -215,9 +284,12 @@ class PersonController extends Controller {
                 } else if($customer){
                     $person->usuario = $customer;
                 }
-
+ 
                 $person->direccion = $address;
                 $person->numeros = $numbers;
+                $person->iddepar = $department->id;
+                $person->idpais = $country->id;
+
             }
 
             if(isset($person)){
@@ -235,6 +307,89 @@ class PersonController extends Controller {
 
     public function edit($id){
         //
+    }
+
+    public function loadMyProfile(Request $req){
+        $personId = null;
+
+        if(Auth::guard('employee')->check()){
+            $personId = Auth::guard('employee')->user()->idpersona;
+        } else if(Auth::guard('customer')->check()){
+            $personId = Auth::guard('customer')->user()->idpersona;
+        } else {
+            return abort(response()->json(['message' => 'There was a problem with token validation'], 403));
+        }
+
+        $person = Persons::where('id', $personId)->first();
+
+        if($person){
+            $address = $person->address()->get();
+            $numbers = $person->phone()->get();
+            $city = $person->city()->first();
+
+            if($city){
+                $department = $city->department()->first();
+                $country = $department->country()->first();
+                $person->iddepar = $department->id;
+                $person->idpais = $country->id;
+            }
+
+            $person->direccion = $address;
+            $person->numeros = $numbers;
+        }
+
+        if(isset($person)){
+            $response = ['res' => ['data' => $person], 'status' => 200];
+        } else {
+            $response = ['res' => ['message' => 'No se pudo obtener el usuario, intentalo de nuevo'], 'status' => 400];
+        }
+
+        return response($response['res'], $response['status']);
+    }
+
+    public function updateMyProfile(Request $req){
+        $personId = null;
+        $userType = null;
+
+        if(Auth::guard('employee')->check()){
+            $personId = Auth::guard('employee')->user()->idpersona;
+            $fields = [
+                'username', 'password', 'address', 'postal_code', 'complements',
+                'cellphone', 'phone', 'cp_length', 'p_length', 'indicative', 'image'
+            ];
+            $userType = 'usuarios';
+        } else if(Auth::guard('customer')->check()){
+            $personId = Auth::guard('customer')->user()->idpersona;
+            $fields = [
+                'id_type', 'id_city', 'id_gender', 'username', 'email', 
+                'password', 'first_name', 'last_name', 'id_number', 'birthday',
+                'address', 'postal_code', 'complements', 'cellphone',
+                'phone', 'cp_length', 'p_length', 'indicative', 'image'
+            ];
+            $userType = 'clientes';
+        } else {
+            return abort(response()->json(['message' => 'There was a problem with token validation'], 403));
+        }
+
+        $req->merge(['user_id' => $personId]);
+        $validator = $this->validateFields->validateWithPhone($req, $fields, 3, null, $userType);
+        if($validator) return response($validator['res'], $validator['status']);
+
+        $person = Persons::where('id', $personId)->first();
+
+        if($person && ($userType == 'usuarios')){
+            $updated = $this->employeeProfile($req, $person);
+        } else if($person && ($userType == 'clientes')){
+            $updated = $this->customerProfile($req, $person);
+        }
+
+        if(isset($person) && isset($updated)){
+            $response = ['res' => ['message' => 'Los datos del perfil fueron actualizados correctamente'], 'status' => 200];
+        } else {
+            $response = ['res' => ['message' => 'No se pudo actualizar los datos del perfil, intentalo de nuevo'], 'status' => 400];
+        }
+
+        return response($response['res'], $response['status']);
     }
 
     public function update(Request $req, $id){

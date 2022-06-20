@@ -23,15 +23,19 @@ class ImageController extends Controller {
         }
     }
 
-    public static function updateImage($folder, $url, $newFile){
-        if($url){
+    public static function updateImage($folder, $url, $newFile, $ignoreImg=''){
+        $isDefaultImg = str_contains($url, $ignoreImg);
+
+        if($url && !$isDefaultImg){
             $deleted = self::deleteImage($folder, $url);
             if($deleted){
                 return self::storeImage($folder, $newFile);
-            }
+            } 
         } else {
             return self::storeImage($folder, $newFile);
         }
+
+        return '';
     }
 
     public static function deleteImage($folder, $url){

@@ -1,31 +1,25 @@
 <?php
 
-namespace App\Models\cities;
+namespace App\Models\countries;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\departments\Departments;
 
-class Cities extends Model {
+class Countries extends Model {
     use HasFactory;
-    protected $table = "ciudades";
+
+    protected $table = "paises";
     public $timestamps = false;
     protected $hidden = ['estado', 'fechacreacion', 'fechamodificacion'];
     protected $fillable = [
-        'iddepar',
-        'costoenvios',
-        'nombreciudades',
+        'nombrepaises',
+        'abreviaturapaises',
         'estado',
         'fechacreacion',
         'fechamodificacion'
     ];
 
     protected $casts = [
-        'id' => 'int',
-        'iddepar' => 'int'
+        'id' => 'int'
     ];
-
-    public function department(){
-        return $this->belongsTo(Departments::class, 'iddepar');
-    }
 }

@@ -140,6 +140,7 @@ class InventoryController extends Controller {
                         'fechamodificacion' => date('Y-m-d')
                     ]);
 
+                    $inventory->observation()->create(Observations::setObservation($req, null, $inventory->id));
                     $inventory->urlfactura = ImageController::updateImage("products/$inventory->idprod/invoices", $inventory->invoice, $req->file('invoice'));
                     $inventory->save();
                 }

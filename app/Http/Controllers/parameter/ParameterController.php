@@ -15,9 +15,19 @@ class ParameterController extends Controller {
         $this->validateFields = new ValidateFields();
     }
 
-    public function index(){
+    // Query params -> page, search->value = categorias
+    public function index(Request $req){
         $pagination = env('PAGINATION_PER_PAGE');
+        $search = $req->query('search');
         $parameter = Parameters::where('estado', 1)->simplePaginate($pagination);
+
+        if($search){
+            if($search == 'categorias'){
+                $parameter = Parameters::where('escategoria', 1)->get();
+            } else {
+                $parameter = Parameters::where('nombretipo', 'LIKE', '%'.$search.'%')->first();
+            }
+        }
 
         if(isset($parameter)){
             $response = ['res' => ['data' => $parameter],  'status' => 200];
@@ -29,12 +39,13 @@ class ParameterController extends Controller {
     }
 
     public function store(Request $req){
-        $validator = $this->validateFields->validate($req, ['parameter_name', 'parameter_desc']);
+        $validator = $this->validateFields->validate($req, ['parameter_name', 'parameter_desc', 'is_category']);
         if($validator) return response($validator['res'], $validator['status']);
 
         $parameter = Parameters::create([
             'nombretipo'=> ucfirst(strtolower($req->parameter_name)),
             'descripciontipo'=> $req->parameter_desc,
+            'escategoria' => $req->is_category,
             'estado' => 1,
             'fechacreacion' => date('Y-m-d'),
             'fechamodificacion' => date('Y-m-d')
@@ -54,13 +65,14 @@ class ParameterController extends Controller {
     }
 
     public function update(Request $req, $id){
-        if ($req->isMethod('PUT')){
-            $validator = $this->validateFields->validate($req, ['parameter_name', 'parameter_desc']);
+        if($req->isMethod('PUT')){
+            $validator = $this->validateFields->validate($req, ['parameter_name', 'parameter_desc', 'is_category']);
             if($validator) return response($validator['res'], $validator['status']);
 
             $parameter = Parameters::where('id', $id)->update([
                 'nombretipo'=> ucfirst(strtolower($req->parameter_name)),
                 'descripciontipo'=> $req->parameter_desc,
+                'escategoria' => $req->is_category,
                 'fechamodificacion' => date('Y-m-d')
             ]);
 

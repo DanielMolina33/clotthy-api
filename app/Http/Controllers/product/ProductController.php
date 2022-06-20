@@ -9,6 +9,7 @@ use App\Models\products\Products;
 use App\Http\Controllers\image\ImageController;
 use App\Http\Controllers\utils\Filters;
 use App\Http\Controllers\utils\Observations;
+use App\Models\parameters\ParametersValues;
 
 class ProductController extends Controller {
     private $filters;
@@ -26,6 +27,11 @@ class ProductController extends Controller {
 
     private function abortResponse(){
         return abort(response()->json(['message' => 'Forbidden'], 403));
+    }
+
+    private function getFeatures($id){
+        
+        return ParametersValues::where('id', $id)->first()->nombretipos;
     }
 
     // Query params -> page, order_by, category, subcategory, search
@@ -125,10 +131,29 @@ class ProductController extends Controller {
         }
     }
 
+    // Query params -> ref
     public function show(Request $req, $id){
+        $prodsRelated = [];
+        $ref = $req->query('ref');
         $product = Products::where('estado', 1)->where('id', $id)->first();
 
         if($product){
+            $myRef = $product->referenciaprod;
+            if($ref && ($ref == $myRef)){
+                $prodsByRef = Products::where('estado', 1)
+                ->where('referenciaprod', $myRef)->get([
+                    'id',
+                    'color as strcolor',
+                    'talla as strtalla'
+                ]);
+                foreach($prodsByRef as $prodRef){
+                    $prodRef->strtalla = $this->getFeatures($prodRef->strtalla);
+                    $prodRef->strcolor = $this->getFeatures($prodRef->strcolor);
+                    array_push($prodsRelated, $prodRef);
+                }
+            }
+            
+            $product->relacionados = $prodsRelated;
             $comments = $product->comment()->get();
             $ratings = $product->rating()->get();
 
@@ -206,12 +231,12 @@ class ProductController extends Controller {
     public function destroy($req, $id){
         if($req->permissions['delete']){
             $product = Products::where('id', $id)->first();
+            $state = ['estado' => 0, 'fechamodificacion' => date('Y-m-d')];
 
             if($product){
-                $product->update([
-                    'estado' => 0,
-                    'fechamodificacion' => date('Y-m-d')
-                ]);
+                $product->update($state);
+                $product->inventory()->update($state);
+                $product->save();
             }
 
             if(isset($product)){

@@ -21,11 +21,11 @@ class ValidateFields {
         });
 
         Validator::extend('only_letters', function($attr, $value){
-            return preg_match_all('/^[a-zA-ZÀ-ÿ\s]+$/', $value);
+            return preg_match_all('/^[a-zA-ZÀ-ÿ\s\ñ]+$/', $value);
         });
         
         Validator::extend('alpha_num_spaces', function($attr, $value){
-            return preg_match_all('/^[a-zA-ZÀ-ÿ0-9\s\,\.]+$/', $value);
+            return preg_match_all('/^[a-zA-ZÀ-ÿ0-9\s\,\.\ñ]+$/', $value);
         });
 
         Validator::extend('only_numbers', function($attr, $value){
@@ -113,7 +113,7 @@ class ValidateFields {
         }
     }
 
-    private function validateValuesIn($req, $field, $values, $isPrice=false){
+    private function validateValuesIn($req, $field, $values){
         $min = $values[0];
         $max = $values[1];
 
@@ -154,12 +154,18 @@ class ValidateFields {
                     $this->getErrors($validator->errors()->all());
                     break;
                 case 'email':
-                    // email length 100 in Database
-                    $userId = (int)($req->route('person'));
+                    $userId = $req->route('person') ? (int)($req->route('person')) : (int)($req->user_id);
                     $isRequired = $userType !== 'clientes' ? 'required' : 'nullable';
                     $unique = $userType !== null ? "|unique:$userType,email,".$userId.",idpersona" : "";
                     $validator = Validator::make($req->only('email'),
                         ['email' => "$isRequired|string|email|max:100".$unique],
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
+                case 'supplier_email':
+                    $supplierId = (int)($req->route('supplier'));
+                    $validator = Validator::make($req->only('supplier_email'),
+                        ['supplier_email' => "required|string|email|max:100|unique:proveedores,correoproveedor,$supplierId"],
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
@@ -184,14 +190,14 @@ class ValidateFields {
                     break;
                 case 'first_name':
                     if($userType !== 'clientes') $this->validateString($req, 'first_name');
-                    else $this->validateString($req, 'first_name', true);
+                    else $this->validateString($req, 'first_name');
                     break;
                 case 'last_name':
                     if($userType !== 'clientes') $this->validateString($req, 'last_name');
-                    else $this->validateString($req, 'last_name', true);
+                    else $this->validateString($req, 'last_name');
                     break;
                 case 'id_number':
-                    $userId = (int)($req->route('person'));
+                    $userId = $req->route('person') ? (int)($req->route('person')) : (int)($req->user_id);
                     $isRequired = $userType !== 'clientes' ? 'required' : 'nullable';
                     $unique = $userType !== null ? "|unique:personas,numerodocumento,".$userId : "";
                     $validator = Validator::make($req->only('id_number'),
@@ -274,6 +280,9 @@ class ValidateFields {
                     break;
                 case 'parameter_desc':
                     $this->validateAlphaNumSpaces($req, 'parameter_desc', 'nullable', 300);
+                    break;
+                case 'is_category':
+                    $this->validateValuesIn($req, 'is_category', [0, 1]);
                     break;
                 case 'id_address_type':
                     $this->validateForeignId($req, 'id_address_type');
@@ -373,11 +382,20 @@ class ValidateFields {
                 case 'id_prod':
                     $this->validateForeignId($req, 'id_prod');
                     break;
+                case 'id_prod_cart':
+                    $cartId = $req->route('cart') ? (int)($req->route('cart')) : $req->cart_id;
+                    $except = $req->route('cart') ? $req->product_cart_id : null;
+
+                    $validator = Validator::make($req->only('id_prod_cart'),
+                        ['id_prod_cart' => "required|numeric|gt:0|unique:productos_carrito,idprod,$except,id,idcarrito,$cartId"],
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
                 case 'prod_ref':
-                    $except = (int)($req->route('product'));
-                    $subcategoryId = (int)($req->id_subcategory);
+                    // $except = (int)($req->route('product'));
+                    // $subcategoryId = (int)($req->id_subcategory);
                     $validator = Validator::make($req->only('prod_ref'),
-                        ['prod_ref' => "required|max:45|alpha_num|unique:productos,referenciaprod,$except,id,subcategoria,$subcategoryId"],
+                        ['prod_ref' => "required|max:45|alpha_num"],
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
@@ -434,6 +452,18 @@ class ValidateFields {
                 case 'id_supplier':
                     $this->validateForeignId($req, 'id_supplier');
                     break;
+                case 'supplier_name':
+                    $this->validateAlphaNumSpaces($req, 'supplier_name', 'nullable');
+                    break;
+                case 'supplier_desc':
+                    $validator = Validator::make($req->only('supplier_desc'),
+                        ['supplier_desc' => "nullable|max:300|string"],
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
+                case 'agent':
+                    $this->validateString($req, 'agent');
+                    break;
                 case 'order_status':
                     $this->validateForeignId($req, 'order_status');
                     break;
@@ -454,6 +484,26 @@ class ValidateFields {
         } else {
             return false;
         }
+    }
+
+    public function validateCart($req, $fields, $cart){
+        $validator = $this->validate($req, $fields, null);
+
+        if(!$validator){
+            $productsCart = $cart->productCart()->get()->toArray();
+    
+            foreach($productsCart as $key => $productCart){
+                if($productCart['id'] != $req->id_prod_cart){
+                    if($key == count($productsCart)-1){
+                        $validator = ['res' => ['message' => 'El producto no existe en el carrito'], 'status' => 400];
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        return $validator;
     }
 
     public function validateWithPhone($req, $fields, $phone_length, $sm_length=null, $userType=null){

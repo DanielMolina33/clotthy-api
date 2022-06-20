@@ -18,29 +18,32 @@ class CompanyController extends Controller {
 
         $required_role = serialize(['administrador general', 'superuser']);
         $required_module = "empresa";
-        $this->middleware("roles:$required_role,$required_module");
+        $this->middleware("roles:$required_role,$required_module")->except(['index', 'show']);
     }
 
     private function abortResponse(){
         return abort(response()->json(['message' => 'Forbidden'], 403));
     }
 
+    // Query params -> page, search
     public function index(Request $req){
-        if($req->permissions['read']){
-            $pagination = env('PAGINATION_PER_PAGE');
-            $companies = Companies::where('estado', 1)->simplePaginate($pagination);
+        $pagination = env('PAGINATION_PER_PAGE');
+        $search = $req->query('search');
+        $companies = Companies::where('estado', 1)->simplePaginate($pagination);
 
-            if(isset($companies)){
-                $response = ['res' => ['data' => $companies], 'status' => 200];
-            } else {
-                $response = ['res' => ['message' => 'Hubo un error al obtener los datos de las empresas, intentalo de nuevo'], 'status' => 400];
-            }
-    
-            return response($response['res'], $response['status']);
-
-        } else {
-            return $this->abortResponse();
+        if($search){
+            $company = Companies::where('estado', 1)
+            ->where('nombreempresa', 'LIKE', '%'.$search.'%')
+            ->first();
         }
+
+        if(isset($companies)){
+            $response = ['res' => ['data' => $companies], 'status' => 200];
+        } else {
+            $response = ['res' => ['message' => 'Hubo un error al obtener los datos de las empresas, intentalo de nuevo'], 'status' => 400];
+        }
+
+        return response($response['res'], $response['status']);
     }
 
     public function create(){
@@ -87,28 +90,23 @@ class CompanyController extends Controller {
     }
 
     public function show(Request $req, $id){
-        if($req->permissions['read']){
-            $company = Companies::where('estado', 1)->where('id', $id)->first();
+        $company = Companies::where('estado', 1)->where('id', $id)->first();
 
-            if($company){
-                $socialMedia = $company->socialMedia()->get();
-                $phones = $company->phone()->get();
+        if($company){
+            $socialMedia = $company->socialMedia()->get();
+            $phones = $company->phone()->get();
 
-                $company->redessociales = $socialMedia;
-                $company->telefonos = $phones;
-            }
-
-            if(isset($company)){
-                $response = ['res' => ['data' => $company], 'status' => 200];
-            } else {
-                $response = ['res' => ['message' => 'Hubo un error al obtener los datos de las empresas, intentalo de nuevo'], 'status' => 400];
-            }
-    
-            return response($response['res'], $response['status']);
-
-        } else {
-            return $this->abortResponse();
+            $company->redessociales = $socialMedia;
+            $company->telefonos = $phones;
         }
+
+        if(isset($company)){
+            $response = ['res' => ['data' => $company], 'status' => 200];
+        } else {
+            $response = ['res' => ['message' => 'Hubo un error al obtener los datos de las empresas, intentalo de nuevo'], 'status' => 400];
+        }
+
+        return response($response['res'], $response['status']);
     }
 
     public function edit(Request $req, $id){
@@ -136,7 +134,7 @@ class CompanyController extends Controller {
                         'fechamodificacion' => date('Y-m-d')
                     ]);
 
-                    $company->logo = ImageController::updateImage('company', $company->logo, $req->file('image'));
+                    $company->logo = ImageController::updateImage('company', $company->logo, $req->file('image'), 'logo');
                     $company->save();
     
                     StorePhone::store($req, $company, 'empresa', 'cp', 'update');

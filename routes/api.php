@@ -17,17 +17,10 @@ Route::group(['middleware' => ['cors', 'json.response']], function(){
     Route::post("/password/reset/{userType}/{id}/{tokenId}", "App\Http\Controllers\login\LoginController@passwordReset");
 });
 
-//Employees routes
+// Employees routes
 Route::group(['middleware' => ['cors', 'json.response', 'auth:employee']], function(){
     // Person
     Route::resource("person", "App\Http\Controllers\person\PersonController")->except(['create', 'edit']);
-
-    // Parameters
-    Route::resource("parameter", "App\Http\Controllers\parameter\ParameterController")->except(['create', 'edit', 'show']);
-    Route::resource("parameter_value", "App\Http\Controllers\parameter\ParameterValueController")->except(['create', 'edit', 'show']);
-
-    // Company
-    Route::resource("company", "App\Http\Controllers\company\CompanyController")->except(['create', 'edit', 'destroy']);
 
     // Roles
     Route::resource("role", "App\Http\Controllers\sRole\sRoleController")->except(['create', 'edit']);
@@ -39,20 +32,48 @@ Route::group(['middleware' => ['cors', 'json.response', 'auth:employee']], funct
 
     // Orders
     Route::resource("order", "App\Http\Controllers\product\OrderController")->except(['create', 'edit', 'destroy']);
+
+    // Suppliers
+    Route::resource("supplier", "App\Http\Controllers\supplier\SupplierController")->except(['create', 'edit']);
 });
 
-// Special routes
+// Customers routes
+Route::group(['middleware' => ['cors', 'json.response', 'auth:customer']], function(){
+    // Shopping cart
+    Route::resource("cart", "App\Http\Controllers\cart\CartController")->except(['create', 'show', 'edit']);    
+});
+
+// Special and free routes
 Route::group(['middleware' => ['cors', 'json.response']], function(){
-    // These all routes can be accessed by employees that have required role and module.
+    // Profile
+    Route::get("/profile/me", "App\Http\Controllers\person\PersonController@loadMyProfile");
+    Route::post("/profile/update", "App\Http\Controllers\person\PersonController@updateMyProfile");
+
+    // Parameters
+    Route::resource("parameter", "App\Http\Controllers\parameter\ParameterController")->except(['create', 'edit', 'show']);
+    Route::resource("parameter_value", "App\Http\Controllers\parameter\ParameterValueController")->except(['create', 'edit', 'show']);
 
     // Pqrsf
     // Customers and free users can access only certain functions like 'store' and 'myPqrsf'.
     Route::resource("pqrsf", "App\Http\Controllers\pqrsf\PqrsfController")->except(['create', 'edit', 'destroy']);
     Route::get("/my_pqrsf", "App\Http\Controllers\pqrsf\PqrsfController@myPqrsf");
 
+    // Company
+    // index and show functions can access from anywhere, for ecommerce page.
+    Route::resource("company", "App\Http\Controllers\company\CompanyController")->except(['create', 'edit', 'destroy']);
+
     // Products
     // Customers and free users can access only certain functions like 'index' and 'show'.
     Route::resource("product", "App\Http\Controllers\product\ProductController")->except(['create', 'edit']);
+
+    // Countries
+    Route::resource("country", "App\Http\Controllers\country\CountryController")->except(['create', 'store', 'show', 'edit', 'update', 'destroy']);
+
+    // Departments
+    Route::resource("department", "App\Http\Controllers\department\DepartmentController")->except(['create', 'store', 'show', 'edit', 'update', 'destroy']);
+
+    // Departments
+    Route::resource("city", "App\Http\Controllers\city\CityController")->except(['create', 'store', 'show', 'edit', 'update', 'destroy']);
 });
 
 // Logout routes
@@ -80,6 +101,10 @@ Route::get('/logout-employees', function(Request $req){
     
     return response()->json($response[0], $response[1]);
 });
+
+// Sales routes
+Route::get("/get-cart", "App\Http\Controllers\sale\SaleController@getCartItems");
+Route::post("/transaction-event", "App\Http\Controllers\sale\SaleController@store");
 
 // Route not found
 Route::fallback(function(){

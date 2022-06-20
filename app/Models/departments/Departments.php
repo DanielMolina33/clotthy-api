@@ -1,20 +1,20 @@
 <?php
 
-namespace App\Models\cities;
+namespace App\Models\departments;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\departments\Departments;
+use App\Models\countries\Countries;
 
-class Cities extends Model {
+class Departments extends Model {
     use HasFactory;
-    protected $table = "ciudades";
+
+    protected $table = "departamentos";
     public $timestamps = false;
     protected $hidden = ['estado', 'fechacreacion', 'fechamodificacion'];
     protected $fillable = [
-        'iddepar',
-        'costoenvios',
-        'nombreciudades',
+        'idpais',
+        'nombredepar',
         'estado',
         'fechacreacion',
         'fechamodificacion'
@@ -22,10 +22,10 @@ class Cities extends Model {
 
     protected $casts = [
         'id' => 'int',
-        'iddepar' => 'int'
+        'idpais' => 'int'
     ];
 
-    public function department(){
-        return $this->belongsTo(Departments::class, 'iddepar');
+    public function country(){
+        return $this->belongsTo(Countries::class, 'idpais');
     }
 }

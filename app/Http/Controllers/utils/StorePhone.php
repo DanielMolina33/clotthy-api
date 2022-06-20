@@ -30,17 +30,22 @@
           ]);
 
         } else if($option == 'update'){
-          $phoneId = $model->phone()->where('idempresa', $model->id)->get()[$key]->id;
+          $phoneId = null;
+          $phones = $model->phone()->where("id$table", $model->id)
+          ->where('tiponumero', $id_number_type->id)->get();
 
-          self::update($model, $phoneId, [
-            'tiponumero' => $id_number_type->id,
-            'idproveedor' => $table == 'proveedor' ? $model->id : null,
-            'idempresa' => $table == 'empresa' ? $model->id : null,
-            'idpersona' => $table == 'persona' ? $model->id : null,
-            'numerotelefono' => $item['number'],
-            'indicativo' => $item['indicative'],
-            'fechamodificacion' => date('Y-m-d')
-          ]);
+          if(count($phones) > 0){
+            $phoneId = $phones[$key]->id;
+            self::update($model, $phoneId, [
+              'tiponumero' => $id_number_type->id,
+              'idproveedor' => $table == 'proveedor' ? $model->id : null,
+              'idempresa' => $table == 'empresa' ? $model->id : null,
+              'idpersona' => $table == 'persona' ? $model->id : null,
+              'numerotelefono' => $item['number'],
+              'indicativo' => $item['indicative'],
+              'fechamodificacion' => date('Y-m-d')
+            ]);
+          }
         }
       }
     }

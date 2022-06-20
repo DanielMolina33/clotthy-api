@@ -16,13 +16,15 @@ class Parameters extends Model {
     protected $fillable = [
         'nombretipo',
         'descripciontipo',
+        'escategoria',
         'estado',
         'fechacreacion',
         'fechamodificacion'
     ];
 
     protected $casts = [
-        'id' => 'int'
+        'id' => 'int',
+        'escategoria' => 'int'
     ];
 
     public function parameterValue(){

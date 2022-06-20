@@ -11,6 +11,7 @@ use App\Models\customers\Customers;
 use App\Models\phones\Phones;
 use App\Models\observations\Observations;
 use App\Models\pqrsf\Pqrsf;
+use App\Models\cities\Cities;
 
 class Persons extends Model {
     use HasFactory;
@@ -34,6 +35,7 @@ class Persons extends Model {
 
     protected $casts = [
         'id' => 'int',
+        'idciudad' => 'int',
         'tipodocumento' => 'int',
         'genero' => 'int',
     ];
@@ -60,5 +62,9 @@ class Persons extends Model {
 
     public function pqrsf(){
         return $this->hasMany(Pqrsf::class, 'idpersona');
+    }
+
+    public function city(){
+        return $this->belongsTo(Cities::class, 'idciudad');
     }
 }
