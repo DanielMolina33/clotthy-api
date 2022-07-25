@@ -103,6 +103,7 @@ Route::get('/logout-employees', function(Request $req){
 });
 
 // Sales routes
+Route::resource("sale", "App\Http\Controllers\sale\SaleController")->except(['create', 'store', 'edit', 'destroy']);
 Route::get("/get-cart", "App\Http\Controllers\sale\SaleController@getCartItems");
 Route::post("/transaction-event", "App\Http\Controllers\sale\SaleController@store");
 

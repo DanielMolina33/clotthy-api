@@ -18,6 +18,7 @@ class CompanyController extends Controller {
 
         $required_role = serialize(['administrador general', 'superuser']);
         $required_module = "empresa";
+        $this->middleware("auth:employee")->except(['index', 'show']);
         $this->middleware("roles:$required_role,$required_module")->except(['index', 'show']);
     }
 
@@ -34,7 +35,9 @@ class CompanyController extends Controller {
         if($search){
             $company = Companies::where('estado', 1)
             ->where('nombreempresa', 'LIKE', '%'.$search.'%')
-            ->first();
+            ->simplePaginate($pagination);
+	    
+            $companies = $company;
         }
 
         if(isset($companies)){
@@ -93,9 +96,13 @@ class CompanyController extends Controller {
         $company = Companies::where('estado', 1)->where('id', $id)->first();
 
         if($company){
+            $city = $company->city()->first();
             $socialMedia = $company->socialMedia()->get();
             $phones = $company->phone()->get();
+            $department = $city->department()->first();
 
+            $company->idpais = $department->idpais;
+            $company->iddepar = $city->iddepar;
             $company->redessociales = $socialMedia;
             $company->telefonos = $phones;
         }
@@ -133,8 +140,11 @@ class CompanyController extends Controller {
                         'nitempresa' => $req->nit,
                         'fechamodificacion' => date('Y-m-d')
                     ]);
-
-                    $company->logo = ImageController::updateImage('company', $company->logo, $req->file('image'), 'logo');
+                    
+                    if($req->file('logo')){
+                        $company->logo = ImageController::updateImage('company', $company->logo, $req->file('image'), 'logo');
+                    }
+                    
                     $company->save();
     
                     StorePhone::store($req, $company, 'empresa', 'cp', 'update');

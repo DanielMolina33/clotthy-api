@@ -42,6 +42,13 @@ class Products extends Model{
         'color' => 'int',
         'talla' => 'int',
         'subcategoria' => 'int',
+        'stock' => 'int',
+        'preciounitario' => 'int',
+        'preciofinal' => 'int',
+        'preciodescuento' => 'int',
+        'porcentajedescuento' => 'int',
+        'existenciaprod' => 'int',
+        'total' => 'int'
     ];
 
     public function inventory(){

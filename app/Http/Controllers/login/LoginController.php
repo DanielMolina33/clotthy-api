@@ -118,7 +118,7 @@ class LoginController extends Controller {
                             'message' => 'Has superado el maximo de intentos para iniciar sesion, por favor cambia tu contraseña',
                             'email' => $emailResponse
                         ],
-                        'status' => 200
+                        'status' => 400
                     ];
                 }
             } else {
@@ -132,7 +132,7 @@ class LoginController extends Controller {
                 'res' => [
                     'message' => 'Has superado el maximo de intentos para iniciar sesion, por favor cambia tu contraseña'
                 ],
-                'status' => 200
+                'status' => 400
             ];
         }
     }
@@ -187,7 +187,7 @@ class LoginController extends Controller {
 
             $response = ['res' => ['message' => 'Contraseña actualizada correctamente'], 'status' => 200];
         } else {
-            $response = ['res' => ['message' => 'Hubo un error al actualizar tu contraseña, intentalo de nuevo'], 'status' => 500];
+            $response = ['res' => ['message' => 'Hubo un error al actualizar tu contraseña, intentalo de nuevo'], 'status' => 400];
         }
         
         Token::where("id", $req->route('tokenId'))->delete();

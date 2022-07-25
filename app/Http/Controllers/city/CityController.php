@@ -9,12 +9,18 @@ use App\Models\cities\Cities;
 class CityController extends Controller {
     public function index(Request $req){
         $departmentId = $req->query('department_id');
+        $cityId = $req->query('city_id');
 		
-		if($departmentId){
+		if($cityId && $departmentId){
+			$cities = Cities::where('estado', 1)
+            ->where('iddepar', $departmentId)
+            ->where('id', $cityId)
+            ->first();
+		} else if($departmentId) {
 			$cities = Cities::where('estado', 1)->where('iddepar', $departmentId)->get();
 		} else {
-			return response(['message' => 'department_id in url is required'], 400);
-		}
+            return response(['message' => 'department_id or city_id in url is required'], 400);
+        }
 
         if(isset($cities)){
             $response = ['res' => ['data' => $cities],  'status' => 200];

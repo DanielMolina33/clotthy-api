@@ -101,7 +101,7 @@ class CartController extends Controller {
             }
     
             if(isset($cart)){
-                $response = ['res' => ['message'  => 'Producto agregado al carrito'], 'status' => 201];
+                $response = ['res' => ['data'  => $cart->id], 'status' => 201];
             } else { 
                 $response = ['res' => ['message' => 'Hubo un error al agregar el producto al carrito, intentalo de nuevo'], 'status' => 400];
             }

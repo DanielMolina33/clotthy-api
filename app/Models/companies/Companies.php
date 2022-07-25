@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 use App\Models\socialmedia\SocialMedia;
 use App\Models\phones\Phones;
+use App\Models\cities\Cities;
 
 class Companies extends Model {
     use HasFactory;
@@ -25,7 +26,7 @@ class Companies extends Model {
 
     protected $casts = [
         'id' => 'int',
-        'iciudad' => 'int'
+        'idciudad' => 'int'
     ];
 
     public function socialMedia(){
@@ -34,5 +35,9 @@ class Companies extends Model {
 
     public function phone(){
         return $this->hasMany(Phones::class, 'idempresa');
+    }
+
+    public function city(){
+        return $this->belongsTo(Cities::class, 'idciudad');
     }
 }

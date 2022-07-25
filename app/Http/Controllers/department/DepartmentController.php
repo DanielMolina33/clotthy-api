@@ -8,11 +8,17 @@ use App\Models\departments\Departments;
 
 class DepartmentController extends Controller {
     public function index(Request $req){
+        $search = $req->query('department_id');
 		$countryId = $req->query('country_id');
 		
-		if($countryId){
+		if($search && $countryId){
+            $departments = Departments::where('estado', 1)
+            ->where('idpais', $countryId)
+            ->where('id', $search)
+            ->get();
+        } else if($countryId){
 			$departments = Departments::where('estado', 1)->where('idpais', $countryId)->get();
-		} else {
+        } else {
 			return response(['message' => 'country_id in url is required'], 400);
 		}
 

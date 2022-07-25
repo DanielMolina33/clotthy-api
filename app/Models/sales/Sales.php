@@ -5,6 +5,7 @@ namespace App\Models\sales;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\products\Products;
+use App\Models\customers\Customers;
 
 class Sales extends Model {
     use HasFactory;
@@ -34,5 +35,9 @@ class Sales extends Model {
     public function productSale(){
         return $this->belongsToMany(Products::class, 'productos_ventas', 'idventa', 'idprod')
         ->withPivot('id', 'cantidad');
+    }
+
+    public function customer(){
+        return $this->belongsTo(Customers::class, 'idcliente');
     }
 }

@@ -42,7 +42,7 @@ class ValidateFields {
     private function validateString($req, $field, $length=45){
         $validator = Validator::make($req->only($field),
             [$field => "required|max:$length|only_letters"],
-            ["$field.only_letters" => "El campo $field Solo puede contener letras."]
+            ["$field.only_letters" => "El campo $field solo puede contener letras."]
         );
         $this->getErrors($validator->errors()->all());
     }
@@ -327,7 +327,11 @@ class ValidateFields {
                     $this->getErrors($validator->errors()->all());
                     break;
                 case 'company_name':
-                    $this->validateAlphaNumSpaces($req, 'company_name', 'required');
+                    $validator = Validator::make($req->only('company_name'),
+                        ['company_name' => 'required|string|max:45']
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    // $this->validateAlphaNumSpaces($req, 'company_name', 'required');
                     break;
                 case 'role_name':
                     $this->validateString($req, 'role_name');
@@ -475,6 +479,18 @@ class ValidateFields {
                         ['order_desc' => "required|max:300|string"],
                     );
                     $this->getErrors($validator->errors()->all());
+                    break;
+                case 'estimated_date':
+                    $validator = Validator::make($req->only('estimated_date'),
+                        ['estimated_date' => "required|date|date_format:Y-m-d"],
+                    );
+                    $this->getErrors($validator->errors()->all());
+                    break;
+                case 'guide_number':
+                    $this->validateValuesIn($req, 'guide_number', [1, 45]);
+                    break;
+                case 'carrier':
+                    $this->validateString($req, 'carrier');
                     break;
             }
         }

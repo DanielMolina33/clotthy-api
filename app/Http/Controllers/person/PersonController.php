@@ -311,10 +311,13 @@ class PersonController extends Controller {
 
     public function loadMyProfile(Request $req){
         $personId = null;
+        $user = null;
 
         if(Auth::guard('employee')->check()){
+            $user = Auth::guard('employee')->user();
             $personId = Auth::guard('employee')->user()->idpersona;
         } else if(Auth::guard('customer')->check()){
+            $user = Auth::guard('customer')->user();
             $personId = Auth::guard('customer')->user()->idpersona;
         } else {
             return abort(response()->json(['message' => 'There was a problem with token validation'], 403));
@@ -336,6 +339,7 @@ class PersonController extends Controller {
 
             $person->direccion = $address;
             $person->numeros = $numbers;
+            $person->usuario = $user;
         }
 
         if(isset($person)){

@@ -24,17 +24,45 @@ class Filters {
 
 	private function all($req, $rule, $orderBy){
 		$filteredItems = DB::table($this->table)
+		->select(
+			'productos.id',
+			'productos.color',
+			'productos.talla',
+			'productos.subcategoria',
+			'productos.referenciaprod',
+			'productos.nombreprod',
+			'productos.descripcionprod',
+			'productos.stock',
+			'productos.preciounitario',
+			'productos.preciofinal',
+			'productos.preciodescuento',
+			'productos.porcentajedescuento',
+			'productos.existenciaprod',
+			'productos.total',
+			'productos.imgprod1',
+			'productos.imgprod2',
+			'productos.imgprod3',
+			'productos.imgprod4',
+			'productos.fechacreacion',
+			'productos.fechamodificacion',
+			'escategoria'
+			)
 		->join('tipos', $this->table.'.subcategoria', '=', 'tipos.id')
 		->join('tipo', 'tipos.idtipo', '=', 'tipo.id')
 		->whereRaw($rule)
 		->orderByRaw("productos.preciofinal $orderBy")
 		->get()->map(function($item){
-			unset($item->estado);
-			unset($item->idtipo);
-			unset($item->nombretipos);
-			unset($item->descripciontipos);
-			unset($item->nombretipo);
-			unset($item->descripciontipo);
+			$item->id = (int)$item->id;
+			$item->color = (int)$item->color;
+			$item->talla = (int)$item->talla;
+			$item->subcategoria = (int)$item->subcategoria;
+			$item->stock = (int)$item->stock;
+			$item->preciounitario = (int)$item->preciounitario;
+			$item->preciofinal = (int)$item->preciofinal;
+			$item->preciodescuento = (int)$item->preciodescuento;
+			$item->porcentajedescuento = (int)$item->porcentajedescuento;
+			$item->existenciaprod = (int)$item->existenciaprod;
+			$item->total = (int)$item->total;
 			return $item;
 		});
 
@@ -45,11 +73,11 @@ class Filters {
 		$rule = null;
 
 		if($cat && $subcat){
-			$rule = "tipo.nombretipo = '$cat' and tipos.nombretipos = '$subcat'";
+			$rule = "tipo.nombretipo = '$cat' and tipos.nombretipos = '$subcat' and productos.estado = 1";
 		} else if($cat){
-			$rule = "tipo.nombretipo = '$cat'";
+			$rule = "tipo.nombretipo = '$cat' and productos.estado = 1";
 		} else if($subcat){
-			$rule = "tipos.nombretipos = '$subcat'";
+			$rule = "tipos.nombretipos = '$subcat' and productos.estado = 1";
 		}
 
 		if($rule){
