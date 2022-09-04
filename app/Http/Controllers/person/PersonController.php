@@ -49,18 +49,18 @@ class PersonController extends Controller {
 
     private function getUsers($req, $userType=null, $search=null){
         $pagination = env('PAGINATION_PER_PAGE');
-
+        
         if($userType == 'employees'){
             $users = $this->userQuery('usuarios', $search);
         } else if($userType == 'customers'){
             $users = $this->userQuery('clientes', $search);
         } else {
             $query1 = $this->userQuery('usuarios', $search);
-            $query2 = $this->userQuery('clientes', $search);
+            $query2 = $this->userQuery('clientes', $search);     
             $users = $query2->merge($query1);
         }
 
-        return collect($users)->paginate($pagination);
+        return collect($users)->paginate($pagination); 
     }
 
     private function employeeProfile($req, $person){
@@ -82,7 +82,7 @@ class PersonController extends Controller {
             'estadodireccion' => 1,
             'fechamodificacion' => date('Y-m-d')
         ]);
-
+        
         StorePhone::store($req, $person, 'persona', 'cp', $numbersOp);
         StorePhone::store($req, $person, 'persona', 'p', $numbersOp);
 
@@ -132,7 +132,7 @@ class PersonController extends Controller {
     //     return [
     //         'idpersona' => $person->id,
     //         'identradaproductos' => null,
-    //         'observacion' => $req->observations,
+    //         'observacion' => $req->observations, 
     //         'estado' => 1,
     //         'fechacreacion' => date('Y-m-d'),
     //         'fechamodificacion' => date('Y-m-d')
@@ -154,7 +154,7 @@ class PersonController extends Controller {
             } else {
                 $response = ['res' => ['message' => 'Hubo un error al obtener los usuarios, intentalo de nuevo'], 'status' => 400];
             }
-
+    
             return response($response['res'], $response['status']);
         } else {
             return $this->abortResponse();
@@ -169,7 +169,7 @@ class PersonController extends Controller {
         if($req->permissions['create']){
             // Image deleted because admin is not who uploads employee's avatar
             $validator = $this->validateFields->validateWithPhone($req, [
-                'id_type', 'id_city', 'id_gender', 'username', 'email',
+                'id_type', 'id_city', 'id_gender', 'username', 'email', 
                 'password', 'first_name', 'last_name', 'roles', 'id_number', 'birthday',
                 'id_address_type', 'address', 'postal_code', 'complements',
                 'cellphone', 'phone', 'cp_length', 'p_length', 'indicative'
@@ -189,11 +189,11 @@ class PersonController extends Controller {
                 'fechacreacion' => date('Y-m-d'),
                 'fechamodificacion' => date('Y-m-d')
             ]);
-
+    
             if($user){
                 // $user->avatar = ImageController::storeImage('avatars', $req->file('image'));
                 // $user->save();
-
+                
                 $employee = $user->employee()->create([
                     'nombreusuario' => $req->username,
                     'idpersona' => $user->id,
@@ -203,7 +203,7 @@ class PersonController extends Controller {
                     'fechacreacion' => date('Y-m-d'),
                     'fechamodificacion' => date('Y-m-d')
                 ]);
-
+    
                 $user->address()->create([
                     'tipodireccion' => $req->id_address_type,
                     'idpersona' => $user->id,
@@ -215,7 +215,7 @@ class PersonController extends Controller {
                     'fechacreacion' => date('Y-m-d'),
                     'fechamodificacion' => date('Y-m-d')
                 ]);
-
+                
                 StorePhone::store($req, $user, 'persona', 'cp', 'create');
                 StorePhone::store($req, $user, 'persona', 'p', 'create');
 
@@ -227,13 +227,13 @@ class PersonController extends Controller {
                     }
                 }
             }
-
+    
             if(isset($user)){
                 $response = ['res' => ['message' => 'El usuario fue creado correctamente'], 'status' => 201];
             } else {
                 $response = ['res' => ['message' => 'Hubo un error al crear el usuario, intentalo de nuevo'], 'status' => 400];
             }
-
+    
             return response($response['res'], $response['status']);
         } else {
             return $this->abortResponse();
@@ -284,7 +284,7 @@ class PersonController extends Controller {
                 } else if($customer){
                     $person->usuario = $customer;
                 }
-
+ 
                 $person->direccion = $address;
                 $person->numeros = $numbers;
                 $person->iddepar = $department->id;
@@ -365,7 +365,7 @@ class PersonController extends Controller {
         } else if(Auth::guard('customer')->check()){
             $personId = Auth::guard('customer')->user()->idpersona;
             $fields = [
-                'id_type', 'id_city', 'id_gender', 'username', 'email',
+                'id_type', 'id_city', 'id_gender', 'username', 'email', 
                 'password', 'first_name', 'last_name', 'id_number', 'birthday',
                 'address', 'postal_code', 'complements', 'cellphone',
                 'phone', 'cp_length', 'p_length', 'indicative', 'image'
@@ -400,22 +400,22 @@ class PersonController extends Controller {
         if($req->isMethod('PUT')){
             if($req->permissions['update']){
                 $fields = ['id_type', 'id_gender', 'email', 'id_number', 'birthday', 'observations'];
-
+    
                 $person = Persons::where('id', $id)->first();
-
+    
                 if($person){
                     $employee = $person->employee()->where('idpersona', $id)->first();
                     $customer = $person->customer()->where('idpersona', $id)->first();
-
+    
                     if($employee){
                         array_push($fields, 'roles', 'id_city', 'first_name', 'last_name');
                         $userType = 'usuarios';
-
+        
                     } else if($customer) $userType = 'clientes';
-
+    
                     $validator = $this->validateFields->validate($req, $fields, $userType);
-                    if($validator) return response($validator['res'], $validator['status']);
-
+                    if($validator) return response($validator['res'], $validator['status']);  
+        
                     if($person && $employee){
                         $person->update([
                             'tipodocumento' => $req->id_type,
@@ -427,7 +427,7 @@ class PersonController extends Controller {
                             'fechanacimiento' => date($req->birthday),
                             'fechamodificacion' =>  date('Y-m-d')
                         ]);
-
+        
                         $person->observation()->create(Observations::setObservation($req, $person->id, null));
                         $person->employee()->update(['email' => $req->email, 'fechamodificacion' => date('Y-m-d')]);
                         $person->save();
@@ -448,7 +448,7 @@ class PersonController extends Controller {
                             }
                         }
 
-
+                        
                     } else if($person && $customer){
                         $person->update([
                             'tipodocumento' => $req->id_type,
@@ -457,21 +457,21 @@ class PersonController extends Controller {
                             'fechanacimiento' => $req->birthday ? date($req->birthday) : null,
                             'fechamodificacion' =>  date('Y-m-d')
                         ]);
-
+    
                         $person->observation()->create(Observations::setObservation($req, $person->id, null));
                         $person->customer()->update(['email' => $req->email, 'fechamodificacion' => date('Y-m-d')]);
                         $person->save();
                     }
                 }
-
+    
                 if(isset($person)){
                     $response = ['res' => ['message' => 'Los datos del usuario fueron actualizados correctamente'], 'status' => 200];
                 } else {
                     $response = ['res' => ['message' => 'No se pudo actualizar el usuario. O el usuario no existe, intentalo de nuevo'], 'status' => 400];
                 }
-
+    
                 return response($response['res'], $response['status']);
-
+    
             } else {
                 return $this->abortResponse();
             }

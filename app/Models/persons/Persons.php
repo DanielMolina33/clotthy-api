@@ -60,6 +60,10 @@ class Persons extends Model {
         return $this->hasMany(Observations::class, 'idpersona');
     }
 
+    public function pqrsf(){
+        return $this->hasMany(Pqrsf::class, 'idpersona');
+    }
+
     public function city(){
         return $this->belongsTo(Cities::class, 'idciudad');
     }
