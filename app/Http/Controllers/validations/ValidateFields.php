@@ -23,7 +23,7 @@ class ValidateFields {
         Validator::extend('only_letters', function($attr, $value){
             return preg_match_all('/^[a-zA-ZÀ-ÿ\s\ñ]+$/', $value);
         });
-        
+
         Validator::extend('alpha_num_spaces', function($attr, $value){
             return preg_match_all('/^[a-zA-ZÀ-ÿ0-9\s\,\.\ñ]+$/', $value);
         });
@@ -258,7 +258,7 @@ class ValidateFields {
                     if(isset($req->images)){
                         foreach($req->images as $i => $image){
                             $isRequired = $i+1 == 1 ? 'required' : 'nullable';
-                            $validator = Validator::make(['image' => $image], 
+                            $validator = Validator::make(['image' => $image],
                                 ['image' => "$isRequired|mimes:jpg,jpeg,png,webp|max:2000"]
                             );
                             $this->getErrors($validator->errors()->all());
@@ -270,7 +270,7 @@ class ValidateFields {
 
                     break;
                 case 'invoice':
-                    $validator = Validator::make($req->only('invoice'), 
+                    $validator = Validator::make($req->only('invoice'),
                         ['invoice' => 'required|mimes:pdf|max:2000']
                     );
                     $this->getErrors($validator->errors()->all());
@@ -422,15 +422,6 @@ class ValidateFields {
                     );
                     $this->getErrors($validator->errors()->all());
                     break;
-                case 'stock':
-                    $this->validateValuesIn($req, 'stock', [1, 10]);
-                    break;
-                case 'final_price':
-                    $this->validateValuesIn($req, 'final_price', [1, 10]);
-                    break;
-                case 'offer_price':
-                    $this->validateValuesIn($req, 'offer_price', [1, 10]);
-                    break;
                 case 'prod_amount':
                     if($req->prod_amounts){
                         foreach($req->prod_amounts as $prodAmount){
@@ -507,7 +498,7 @@ class ValidateFields {
 
         if(!$validator){
             $productsCart = $cart->productCart()->get()->toArray();
-    
+
             foreach($productsCart as $key => $productCart){
                 if($productCart['id'] != $req->id_prod_cart){
                     if($key == count($productsCart)-1){
@@ -527,7 +518,7 @@ class ValidateFields {
         $p_gt = null;
         $sm_gt = null;
         $messages = [];
-        
+
         if(in_array('cp_length', $fields)){
             $cp_gt = intval($req->cp_length) > $phone_length;
             if($cp_gt) array_push($messages, "cp length no puede ser mayor que $phone_length");
@@ -544,7 +535,7 @@ class ValidateFields {
         }
 
         if($cp_gt || $p_gt || $sm_gt) return ['res' => ['message' => $messages], 'status' => 400];
-          
+
         $validator = $this->validate($req, $fields, $userType);
         return $validator;
     }
